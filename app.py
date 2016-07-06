@@ -1,8 +1,9 @@
 import logging
 import os
+import json
 
 from datetime import date
-from flask import Flask, request, session, redirect
+from flask import Flask, request, session, redirect, render_template, url_for, json
 from twilio import twiml
 from twilio.rest import TwilioRestClient
 from twilio import TwilioRestException
@@ -36,7 +37,7 @@ def get_client():
 @app.route('/')
 def landing():
     # Boring af landing page
-    return('Landing page')
+    return render_template("landing.html")
 
 @app.route('/ping', methods=['POST', 'GET'])
 def ping_it():
@@ -87,34 +88,32 @@ def receive_sms():
 
     # Orders from most recent to oldest
     sms_list = client.sms.messages.list(to=TWILIO_NUMBER)
-
-    # Add filtering by tracker phone number later
-    stringy = """
-        <h1>Received messages</h1>
-        Found {} incoming sms:<br>
-    """.format(len(sms_list))
+    # list of strings with details of each ping
+    pings = []
 
     # number the message and print the body of message
     for (index, sms) in enumerate(sms_list):
         # parse through sms body
-        stringy += "<b>{}</b>: ".format(index+1)
-        if 'maps' in sms.body:
+        if ('maps' in sms.body) and ('T:' in sms.body):
             # Parse through body only if it returns with google maps link
             details = sms.body.split(' ')
-
+            ping = {}
             for (index, val) in enumerate(details):
-                # Get the date and time
-                if ('T:' in val) and (len(val) > 3):
-                    stringy += "<b>Timestamp: </b> {} {}".format(val[4:], details[index + 1])
-                # Get the maps link
-                if 'maps' in val:
-                    stringy += " <b><a href=\"{}\">Google map</a></b>".format(val)
-        else:
-            # Spit out the response from tracker 
-            stringy += "{}".format(sms.body)
-        stringy += "<br>"
+                # Parse through the message body, build a return string
 
-    return(stringy)
+                if ('T:' in val):
+                    # Get the date and time
+                    ping["to"] = sms.to
+                    ping["timestamp"] = "{} {}".format(val[4:], details[index + 1])
+                elif ('maps' in val) and (len(val) > 50):
+                    # Get the maps link
+                    ping["link"] = val[2:]
+
+            if len(ping) == 3:
+                pings.append(ping)
+                print(ping)
+
+    return render_template("tracked.html", pings=pings)
 
 @app.route('/auth/<string:phone>', methods=['POST', 'GET'])
 def add_auth(phone):
