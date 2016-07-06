@@ -2,17 +2,15 @@ import logging
 import os
 
 from datetime import date
-from flask import Flask, request
+from flask import Flask, request, session, redirect
 from twilio import twiml
 from twilio.rest import TwilioRestClient
 from twilio import TwilioRestException
 
-from os.path import join, dirname
-from dotenv import load_dotenv
+from runenv import load_env
 
 # Load environment variables from .env file
-dotenv_path = join(dirname(__file__), '.env')
-load_dotenv(dotenv_path)
+load_env(env_file='.env')
 
 TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
 TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
@@ -37,10 +35,11 @@ def get_client():
 
 @app.route('/')
 def landing():
+    # Boring af landing page
     return('Landing page')
 
-@app.route('/call', methods=['POST', 'GET'])
-def receive_call():
+@app.route('/ping', methods=['POST', 'GET'])
+def ping_it():
     # Make a call to the tracker
     client = get_client()
     call = client.calls.create(
@@ -56,6 +55,9 @@ def receive_call():
         Status: {}<br><br>
         <form action="/status/{}">
             <input type="submit" value="Refresh Call Status">
+        </form>
+        <form action="/sms">
+            <input type="submit" value="Check sms">
         </form>
     """.format(call.sid, call.to, call.status, call.sid)
     return(stringy)
@@ -83,7 +85,8 @@ def receive_sms():
     # Retrieve all sms from tracker 1 and print it
     client = get_client()
 
-    sms_list = client.sms.messages.list()
+    # Orders from most recent to oldest
+    sms_list = client.sms.messages.list(to=TWILIO_NUMBER)
 
     # Add filtering by tracker phone number later
     stringy = """
@@ -93,7 +96,23 @@ def receive_sms():
 
     # number the message and print the body of message
     for (index, sms) in enumerate(sms_list):
-        stringy += str(index+1) + ": " + sms.body + "<br>"
+        # parse through sms body
+        stringy += "<b>{}</b>: ".format(index+1)
+        if 'maps' in sms.body:
+            # Parse through body only if it returns with google maps link
+            details = sms.body.split(' ')
+
+            for (index, val) in enumerate(details):
+                # Get the date and time
+                if ('T:' in val) and (len(val) > 3):
+                    stringy += "<b>Timestamp: </b> {} {}".format(val[4:], details[index + 1])
+                # Get the maps link
+                if 'maps' in val:
+                    stringy += " <b><a href=\"{}\">Google map</a></b>".format(val)
+        else:
+            # Spit out the response from tracker 
+            stringy += "{}".format(sms.body)
+        stringy += "<br>"
 
     return(stringy)
 
@@ -111,6 +130,23 @@ def add_auth(phone):
         Sms id: {}<br>
         Status: {}<br>
     """.format(phone, message.sid, message.status)
+
+    return(stringy)
+
+@app.route('/apn', methods=['POST', 'GET'])
+def set_apn():
+    # Add an authorized number to the tracker
+    client = get_client()
+    # send phone number to authorize with predefined template
+    message = client.messages.create(to=TRACKER_1, from_=TWILIO_NUMBER,
+                                     body="check123456")
+    # Wooooo admin added
+    stringy = """
+        <h1>APN request sent</h1>
+        Sms id: {}<br>
+        Status: {}<br>
+        Sms body: {}<br>
+    """.format(message.sid, message.status, message.body)
 
     return(stringy)
 
