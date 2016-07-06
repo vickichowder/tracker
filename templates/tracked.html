@@ -69,7 +69,7 @@
     <div class="container">
         <div class="list-group">
           {% for ping in pings %}
-            <a href="{{ ping['link'] }}" class="list-group-item">
+            <a href="{{ ping['link'] }}" class="list-group-item" target="_blank">
               {{ ping['to'] }} {{ ping['timestamp'] }}
             </a>
           {% endfor %}
