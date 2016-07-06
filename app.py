@@ -10,6 +10,7 @@ from twilio import TwilioRestException
 from os.path import join, dirname
 from dotenv import load_dotenv
 
+# Load environment variables from .env file
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 
@@ -20,8 +21,9 @@ TRACKER_APP_ID = os.getenv('TRACKER_APP_ID')
 TRACKER_1 = os.getenv('TRACKER_1')
 
 app = Flask(__name__)
-print(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+
 def get_client():
+    # Create and return Twilio client
     try:
         client = TwilioRestClient(account=TWILIO_ACCOUNT_SID, token=TWILIO_AUTH_TOKEN)
         print('Retrieved a twilio client object')
@@ -46,6 +48,7 @@ def receive_call():
         from_=TWILIO_NUMBER,
         url="http://twimlets.com/holdmusic?Bucket=com.twilio.music.ambient")
 
+    # Call details
     stringy = """
         <h1>Call successful</h1>
         Call id: {}<br>
@@ -63,6 +66,7 @@ def status_refresh(call_sid):
     client = get_client()
     call = client.calls.get(call_sid)
 
+    # Call details
     stringy = """
         <h1>Call successful</h1>
         Call id: {}<br>
@@ -81,11 +85,13 @@ def receive_sms():
 
     sms_list = client.sms.messages.list()
 
+    # Add filtering by tracker phone number later
     stringy = """
         <h1>Received messages</h1>
         Found {} incoming sms:<br>
     """.format(len(sms_list))
 
+    # number the message and print the body of message
     for (index, sms) in enumerate(sms_list):
         stringy += str(index+1) + ": " + sms.body + "<br>"
 
@@ -93,12 +99,12 @@ def receive_sms():
 
 @app.route('/auth/<string:phone>', methods=['POST', 'GET'])
 def add_auth(phone):
-    # Retrieve all sms from tracker 1 and print it
+    # Add an authorized number to the tracker
     client = get_client()
-
+    # send phone number to authorize with predefined template
     message = client.messages.create(to=TRACKER_1, from_=TWILIO_NUMBER,
                                      body="admin123456 " + phone)
-
+    # Wooooo admin added
     stringy = """
         <h1>Add admin request sent</h1>
         Added admin: {}<br>
@@ -110,12 +116,14 @@ def add_auth(phone):
 
 @app.errorhandler(500)
 def server_error(e):
+    # Goddamn errors
     logging.exception('An error occurred during a request.')
     return """
-    An internal error occurred: <pre>{}</pre>
-    See logs for full stacktrace.
+        An internal error occurred: <pre>{}</pre>
+        See logs for full stacktrace.
     """.format(e), 500
 
 
 if __name__ == '__main__':
+    # localhost:8000
     app.run(port=8000, debug=True)
