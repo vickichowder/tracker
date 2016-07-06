@@ -7,32 +7,22 @@ from flask import Flask, request, session, redirect, render_template, url_for, j
 from twilio import twiml
 from twilio.rest import TwilioRestClient
 from twilio import TwilioRestException
-
 from runenv import load_env
 
-# Load environment variables from .env file
-load_env(env_file='.env')
+from connect.phone import Twilio
+from connect.database import DB
 
-TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
-TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
+app = Flask(__name__)
+
+load_env(env_file='.env')
+# Ideally this will not be here. We will eventually containerize this
+# So the environment variables are global in the app
 TWILIO_NUMBER = os.getenv('TWILIO_NUMBER')
 TRACKER_APP_ID = os.getenv('TRACKER_APP_ID')
 TRACKER_1 = os.getenv('TRACKER_1')
 
-app = Flask(__name__)
-
-def get_client():
-    # Create and return Twilio client
-    try:
-        client = TwilioRestClient(account=TWILIO_ACCOUNT_SID, token=TWILIO_AUTH_TOKEN)
-        print('Retrieved a twilio client object')
-        return client
-    except TwilioRestException as e:
-        print("Could not establish Twilio client")
-        print(e)
-        print('--------------------\n')
-        traceback.print_exc(file=sys.stdout)
-        return
+twilio_client = Twilio().client
+db_client = DB().client
 
 @app.route('/')
 def landing():
@@ -42,8 +32,7 @@ def landing():
 @app.route('/ping', methods=['POST', 'GET'])
 def ping_it():
     # Make a call to the tracker
-    client = get_client()
-    call = client.calls.create(
+    call = twilio_client.calls.create(
         to=TRACKER_1,
         from_=TWILIO_NUMBER,
         url="http://twimlets.com/holdmusic?Bucket=com.twilio.music.ambient")
@@ -66,8 +55,7 @@ def ping_it():
 @app.route('/status/<string:call_sid>', methods=['POST', 'GET'])
 def status_refresh(call_sid):
     # Make a call to the tracker
-    client = get_client()
-    call = client.calls.get(call_sid)
+    call = twilio_client.calls.get(call_sid)
 
     # Call details
     stringy = """
@@ -84,10 +72,8 @@ def status_refresh(call_sid):
 @app.route('/sms', methods=['POST', 'GET'])
 def receive_sms():
     # Retrieve all sms from tracker 1 and print it
-    client = get_client()
-
     # Orders from most recent to oldest
-    sms_list = client.sms.messages.list(to=TWILIO_NUMBER)
+    sms_list = twilio_client.sms.messages.list(to=TWILIO_NUMBER)
     # list of strings with details of each ping
     pings = []
 
@@ -118,9 +104,8 @@ def receive_sms():
 @app.route('/auth/<string:phone>', methods=['POST', 'GET'])
 def add_auth(phone):
     # Add an authorized number to the tracker
-    client = get_client()
     # send phone number to authorize with predefined template
-    message = client.messages.create(to=TRACKER_1, from_=TWILIO_NUMBER,
+    message = twilio_client.messages.create(to=TRACKER_1, from_=TWILIO_NUMBER,
                                      body="admin123456 " + phone)
     # Wooooo admin added
     stringy = """
@@ -135,9 +120,8 @@ def add_auth(phone):
 @app.route('/apn', methods=['POST', 'GET'])
 def set_apn():
     # Add an authorized number to the tracker
-    client = get_client()
     # send phone number to authorize with predefined template
-    message = client.messages.create(to=TRACKER_1, from_=TWILIO_NUMBER,
+    message = twilio_client.messages.create(to=TRACKER_1, from_=TWILIO_NUMBER,
                                      body="check123456")
     # Wooooo admin added
     stringy = """
