@@ -48,19 +48,28 @@
       if (response.status === 'connected') {
         // Logged into your app and Facebook.
         FB.api('/me', function(response) {
+          document.getElementById('status').innerHTML = "Thanks for logging in, " + response.name;
+          document.getElementById('ping').innerHTML = `<div class="dropdown">
+            <button class="btn btn-primary btn-lg dropdown-toggle" type="button" data-toggle="dropdown">Ping
+            <span class="caret"></span></button>
+            <ul class="dropdown-menu">
+              <li><a href="/pings">Your Tracker</a></li>
+            </ul>
+          </div>`
           console.log('Successful login for: ' + response.name);
-          document.getElementById('message').innerHTML = `<h1 class="cover-heading">Welcome, `+response.name+`</h1>
-          <p class="lead">Would you like to...</p>
-          <a href="/pings" class="btn btn-lg btn-default">Ping a tracker</a>`;
-          document.getElementById('logout').innerHTML = `<li><a href="/" onclick="FB.logout();statusChangeCallback();">Logout</a></li>`;
         });
+      } else if (response.status === 'not_authorized') {
+        // The person is logged into Facebook, but not your app.
+        document.getElementById('status').innerHTML = 'Please log ' +
+        'into this app.';
       } else {
-        document.getElementById('message').innerHTML = `<h1 class="cover-heading">Track anything.</h1>
-        <p class="lead">No monthly subscriptions. Pay as you ping.</p>
-        <a class="btn btn-block btn-social btn-facebook" onlogin="checkLoginState();" onclick="FB.login();statusChangeCallback();">
-        <span class="fa fa-facebook"></span> <b>Continue with Facebook</b></a>`;
+        // The person is not logged into Facebook, so we're not sure if
+        // they are logged into this app or not.
+        document.getElementById('status').innerHTML = 'Please log ' +
+        'into Facebook.';
       }
     }
+
     function checkLoginState() {
       FB.getLoginStatus(function(response) {
         statusChangeCallback(response);
@@ -116,14 +125,21 @@
                   <li class="active"><a href="/">Home</a></li>
                   <li><a href="#">Features</a></li>
                   <li><a href="#">Contact</a></li>
-                  <div id="logout" class="nav masthead-nav"></div>
                 </ul>
               </nav>
             </div>
           </div>
 
           <div class="inner cover">
-            <div id="message"></div>
+            <h1 class="cover-heading">Track anything.</h1>
+            <p class="lead">No monthly subscriptions. Pay as you ping.</p>
+            <div class="list-group">
+              {% for ping in pings %}
+              <a href="{{ ping['link'] }}" class="list-group-item" target="_blank">
+                {{ ping['to'] }} {{ ping['timestamp'] }}
+              </a>
+              {% endfor %}
+            </div>
           </div>
 
           <div class="mastfoot">

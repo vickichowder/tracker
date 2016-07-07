@@ -32,6 +32,11 @@ def landing():
     # Boring af landing page
     return render_template("landing.html")
 
+@app.route('/loggedin')
+def logged():
+    # Boring af landing page
+    return render_template("loggedin.html")
+
 @app.route('/ping', methods=['POST', 'GET'])
 def ping_it():
     # Make a call to the tracker
