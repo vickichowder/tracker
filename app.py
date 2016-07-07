@@ -11,6 +11,7 @@ from runenv import load_env
 
 from connect.phone import Twilio
 from connect.database import DB
+from data.pings import Pings
 
 app = Flask(__name__)
 
@@ -69,37 +70,11 @@ def status_refresh(call_sid):
     """.format(call.sid, call.to, call.status, call.sid)
     return(stringy)
 
-@app.route('/sms', methods=['POST', 'GET'])
-def receive_sms():
-    # Retrieve all sms from tracker 1 and print it
-    # Orders from most recent to oldest
-    sms_list = twilio_client.sms.messages.list(to=TWILIO_NUMBER)
-    # list of strings with details of each ping
-    pings = []
+@app.route('/pings', methods=['POST', 'GET'])
+def load_pings():
+    pings = Pings(twilio_client, db_client, TRACKER_1)
 
-    # number the message and print the body of message
-    for (index, sms) in enumerate(sms_list):
-        # parse through sms body
-        if ('maps' in sms.body) and ('T:' in sms.body):
-            # Parse through body only if it returns with google maps link
-            details = sms.body.split(' ')
-            ping = {}
-            for (index, val) in enumerate(details):
-                # Parse through the message body, build a return string
-
-                if ('T:' in val):
-                    # Get the date and time
-                    ping["to"] = sms.to
-                    ping["timestamp"] = "{} {}".format(val[4:], details[index + 1])
-                elif ('maps' in val) and (len(val) > 50):
-                    # Get the maps link
-                    ping["link"] = val[2:]
-
-            if len(ping) == 3:
-                pings.append(ping)
-                print(ping)
-
-    return render_template("tracked.html", pings=pings)
+    return render_template("tracked.html", pings=pings.data)
 
 @app.route('/auth/<string:phone>', methods=['POST', 'GET'])
 def add_auth(phone):

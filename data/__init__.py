@@ -1,0 +1,1 @@
+from .pings import Pings
