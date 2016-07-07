@@ -52,12 +52,12 @@
           document.getElementById('message').innerHTML = `<h1 class="cover-heading">Welcome, `+response.name+`</h1>
           <p class="lead">Would you like to...</p>
           <a href="/pings" class="btn btn-lg btn-default">Ping a tracker</a>`;
-          document.getElementById('logout').innerHTML = `<li><a href="/" onclick="FB.logout();statusChangeCallback();">Logout</a></li>`;
+          document.getElementById('logout').innerHTML = `<li><a href="/" onclick="FB.logout();checkLoginState();">Logout</a></li>`;
         });
       } else {
         document.getElementById('message').innerHTML = `<h1 class="cover-heading">Track anything.</h1>
         <p class="lead">No monthly subscriptions. Pay as you ping.</p>
-        <a class="btn btn-block btn-social btn-facebook" onlogin="checkLoginState();" onclick="FB.login();statusChangeCallback();">
+        <a class="btn btn-block btn-social btn-facebook" onlogin="checkLoginState();" onclick="FB.login();checkLoginState();">
         <span class="fa fa-facebook"></span> <b>Continue with Facebook</b></a>`;
       }
     }
