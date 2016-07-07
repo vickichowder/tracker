@@ -25,6 +25,8 @@ TRACKER_1 = os.getenv('TRACKER_1')
 twilio_client = Twilio().client
 db_client = DB().client
 
+email = 'tracker@vickichowder.com'
+
 @app.route('/')
 def landing():
     # Boring af landing page
@@ -72,7 +74,7 @@ def status_refresh(call_sid):
 
 @app.route('/pings', methods=['POST', 'GET'])
 def load_pings():
-    pings = Pings(twilio_client, db_client, TRACKER_1)
+    pings = Pings(twilio_client, db_client, TRACKER_1, email)
 
     return render_template("tracked.html", pings=pings.data)
 

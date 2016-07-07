@@ -4,12 +4,12 @@ import pymysql
 from twilio import twiml
 
 class Pings:
-    def __init__(self, twilio_client, db_client, phone):
+    def __init__(self, twilio_client, db_client, phone, email):
         self.phone = phone
         self.data = []
 
         self.refresh(twilio_client, db_client)
-        self.get_locations(db_client)
+        self.get_locations(db_client, email)
 
     def refresh(self, twilio_client, db_client):
         # Get the most recent ping
@@ -46,12 +46,17 @@ class Pings:
                 db_client.rollback()
                 print("Could not execute insert", e)
 
-    def get_locations(self, db_client):
+    def get_locations(self, db_client, email):
         # Retrieve all sms from tracker phone number
         c = db_client.cursor(pymysql.cursors.DictCursor)
         pings = []
         try:
-            c.execute("SELECT * FROM positions WHERE tracker_id='{}' ORDER BY pinged_on DESC".format(self.phone))
+            c.execute("""
+                SELECT * FROM positions p
+                JOIN trackers t ON p.tracker_id = t.tracker_id
+                WHERE t.tracker_id='{}'
+                    AND t.email='{}' ORDER BY p.pinged_on DESC
+                """.format(self.phone, email))
             data = c.fetchall()
             print(data)
             for row in data:
