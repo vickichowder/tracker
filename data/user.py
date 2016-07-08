@@ -12,6 +12,5 @@ class User(db):
         self.balance = balance
         self.name = name
 
-
     def __repr__(self):
         return '<User %r>' % self.name

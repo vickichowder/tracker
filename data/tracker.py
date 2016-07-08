@@ -2,7 +2,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 class Tracker(db):
     tracker_id = db.Column(db.String(12), unique=True, primary_key=True)
-    user_id = db.Column(db.String(80), unique=True)
+    user_id = db.Column(db.String(80))
     tracker_name = db.Column(db.String(120))
 
     def __init__(self, tracker_id, user_id, tracker_name):

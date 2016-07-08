@@ -1,80 +1,67 @@
 import os, logging
-import pymysql
 
 from twilio import twiml
+from flask_sqlalchemy import SQLAlchemy
+
+from data.position import Position
+from data.tracker import Tracker
+from data.user import User
 
 class Pings:
-    def __init__(self, twilio_client, db_client, email):
-        self.data = []
-        self.phones = []
+    def __init__(self, twilio_client, db, email):
+        # data = dict[tracker_id]: [{time, latitude, longitude}]
+        self.location = {}
+        # list of the trackers for this email
+        self.trackers = []
         self.email = email
 
-        self.refresh(twilio_client, db_client)
-        self.get_locations(db_client, email)
+        self.get_trackers(db)
+        self.get_locations(db)
+        self.refresh(twilio_client, db)
+        self.get_locations(db)
 
-    def refresh(self, twilio_client, db_client):
-        # get the tracker phone number(s)
-        c = db_client.cursor(pymysql.cursors.DictCursor)
-        c.execute("SELECT tracker_id FROM trackers WHERE email = '{}'".format(self.email))
-        self.phones = c.fetchall()
-        c.close()
-        print(self.phones[0]['tracker_id'])
-        # Get the most recent ping
-        sms = twilio_client.sms.messages.list(from_=self.phones[0]['tracker_id'])[0]
-        print(sms)
-        timestamp = ''
-        latitude = ''
-        longitude = ''
+    def get_trackers(self, db):
+        # Query the trackers that belong to this email
+        self.trackers = Tracker.query.join(User, User.user_id=Tracker.user_id).filter_by(User.email=self.email).all()
 
-        # number the message and print the body of message
-        if ('maps' in sms.body) and ('T:' in sms.body):
-            # Parse through body only if it returns with google maps link
-            details = sms.body.split(' ')
-            for (index, val) in enumerate(details):
-                # Parse through the message body, build a return string
+    def get_locations(self, db):
+        # Query the locations for each tracker
+        for tracker_id in self.trackers:
+            self.location[tracker_id] = []
+            for ping in Position.query.filter_by(tracker_id=tracker_id).order_by(desc(time)).all():
+                self.location[tracker_id].append({
+                    'time' : ping.time,
+                    'link' : "https://www.google.com/maps?f=q&q={},{}&z=16".format(ping.latitude, ping.longitude)})
 
-                if ('lat:' in val) and (len(val) > 5):
-                    # Get latitude
-                    latitude = val[6:]
-                elif ('long:' in val) and (len(val) > 5):
-                    # Get longitude
-                    longitude = val[5:]
-                elif ('T:' in val):
-                    # Get the date and time
-                    timestamp = "{} {}".format(val[4:], details[index + 1])
+    def refresh(self, twilio_cient, db, tracker_id):
+        # Assuming that we ping on demand... get pings for today only
+        # We'll need to change this logic if pings happen at intervals
+        today = twilio_client.sms.messages.list(from_=phone, date_sent=datetime.datetime.now().strftime("%Y-%m-%d"))
+        existing = Position.query(sms_id).filter_by(tracker_id).all()
 
-            c = db_client.cursor()
-            try:
-                insert = "INSERT INTO positions VALUES ('{}', STR_TO_DATE('{}','%m/%d/%y %H:%i'), {}, {})".format(self.phones[0]['tracker_id'], timestamp, latitude, longitude)
-                c.execute(insert)
-                db_client.commit()
-                c.close()
-                print(insert, '\n')
-            except Exception as e:
-                db_client.rollback()
-                print("Could not execute insert", e)
+        for sms in today:
+            timestamp = None
+            latitude = None
+            longitude = None
 
-    def get_locations(self, db_client, email):
-        # Retrieve all sms from tracker phone number
-        c = db_client.cursor(pymysql.cursors.DictCursor)
-        pings = []
-        try:
-            c.execute("""
-                SELECT * FROM positions p
-                JOIN trackers t ON p.tracker_id = t.tracker_id
-                WHERE t.tracker_id='{}'
-                    AND t.email='{}' ORDER BY p.pinged_on DESC
-                """.format(self.phones[0]['tracker_id'], email))
-            data = c.fetchall()
-            print(data)
-            for row in data:
-                ping = {}
-                ping['timestamp'] = row['pinged_on']
-                ping['link'] = "https://www.google.com/maps?f=q&q={},{}&z=16".format(row['latitude'], row['longitude'])
-                pings.append(ping)
-                print(ping)
+            if ('maps' in sms.body) and ('T:' in sms.body) and sms.sid not in existing:
+                # Parse through body only if it returns with google maps link
+                details = sms.body.split(' ')
+                for (index, val) in enumerate(details):
+                    # Parse through the message body, build a return string
 
-        except Exception as e:
-            print("Could not execute select", e)
+                    if ('lat:' in val) and (len(val) > 5):
+                        # Get latitude
+                        latitude = val[6:]
+                    elif ('long:' in val) and (len(val) > 5):
+                        # Get longitude
+                        longitude = val[5:]
+                    elif ('T:' in val):
+                        # Get the date and time
+                        timestamp = "{} {}".format(val[4:], details[index + 1])
 
-        self.data = pings
+                if timestamp and latitude and longitude:
+                    # It's all there, so add it to our db
+                    new_record = Position(tracker_id, datetime.strptime(timestamp, "%m/%d/%y %H:%m"), latitude, longitude)
+                    db.session.add(new_record)
+                    db.session.commit()
