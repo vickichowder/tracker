@@ -8,12 +8,12 @@ from twilio import twiml
 from twilio.rest import TwilioRestClient
 from twilio import TwilioRestException
 from runenv import load_env
+from flask_restful import Resource, Api
+from flask_sqlalchemy import SQLAlchemy
 
 from connect.phone import Twilio
 from connect.database import DB
 from data.pings import Pings
-
-app = Flask(__name__)
 
 load_env(env_file='.env')
 # Ideally this will not be here. We will eventually containerize this
@@ -24,6 +24,11 @@ TRACKER_1 = os.getenv('TRACKER_1')
 
 twilio_client = Twilio().client
 db_client = DB().client
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = db_client.uri
+app.secret_key = os.getenv('APP_SECRET_KEY')
+db = SQLAlchemy(app)
 
 @app.route('/')
 def landing():
@@ -74,7 +79,7 @@ def status_refresh(call_sid):
 def load_pings():
     email = request.args.get('email', '', type=str)
     print('email', email)
-    pings = Pings(twilio_client, db_client, email)
+    pings = Pings(twilio_client, db, email)
 
     return render_template("pinged.html", pings=pings.data, email=email)
 
