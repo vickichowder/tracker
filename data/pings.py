@@ -4,16 +4,24 @@ import pymysql
 from twilio import twiml
 
 class Pings:
-    def __init__(self, twilio_client, db_client, phone, email):
-        self.phone = phone
+    def __init__(self, twilio_client, db_client, email):
         self.data = []
+        self.phones = []
+        self.email = email
 
         self.refresh(twilio_client, db_client)
         self.get_locations(db_client, email)
 
     def refresh(self, twilio_client, db_client):
+        # get the tracker phone number(s)
+        c = db_client.cursor(pymysql.cursors.DictCursor)
+        c.execute("SELECT tracker_id FROM trackers WHERE email = '{}'".format(self.email))
+        self.phones = c.fetchall()
+        c.close()
+        print(self.phones[0]['tracker_id'])
         # Get the most recent ping
-        sms = twilio_client.sms.messages.list(from_=self.phone)[0]
+        sms = twilio_client.sms.messages.list(from_=self.phones[0]['tracker_id'])[0]
+        print(sms)
         timestamp = ''
         latitude = ''
         longitude = ''
@@ -37,7 +45,7 @@ class Pings:
 
             c = db_client.cursor()
             try:
-                insert = "INSERT INTO positions VALUES ('{}', STR_TO_DATE('{}','%m/%d/%y %H:%i'), {}, {})".format(self.phone, timestamp, latitude, longitude)
+                insert = "INSERT INTO positions VALUES ('{}', STR_TO_DATE('{}','%m/%d/%y %H:%i'), {}, {})".format(self.phones[0]['tracker_id'], timestamp, latitude, longitude)
                 c.execute(insert)
                 db_client.commit()
                 c.close()
@@ -56,7 +64,7 @@ class Pings:
                 JOIN trackers t ON p.tracker_id = t.tracker_id
                 WHERE t.tracker_id='{}'
                     AND t.email='{}' ORDER BY p.pinged_on DESC
-                """.format(self.phone, email))
+                """.format(self.phones[0]['tracker_id'], email))
             data = c.fetchall()
             print(data)
             for row in data:
