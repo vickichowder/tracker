@@ -25,17 +25,10 @@ TRACKER_1 = os.getenv('TRACKER_1')
 twilio_client = Twilio().client
 db_client = DB().client
 
-email = 'tracker@vickichowder.com'
-
 @app.route('/')
 def landing():
     # Boring af landing page
     return render_template("landing.html")
-
-@app.route('/loggedin')
-def logged():
-    # Boring af landing page
-    return render_template("loggedin.html")
 
 @app.route('/ping', methods=['POST', 'GET'])
 def ping_it():
@@ -79,41 +72,11 @@ def status_refresh(call_sid):
 
 @app.route('/pings', methods=['POST', 'GET'])
 def load_pings():
-    pings = Pings(twilio_client, db_client, TRACKER_1, email)
+    email = request.args.get('email', '', type=str)
+    print('email', email)
+    pings = Pings(twilio_client, db_client, email)
 
-    return render_template("tracked.html", pings=pings.data)
-
-@app.route('/auth/<string:phone>', methods=['POST', 'GET'])
-def add_auth(phone):
-    # Add an authorized number to the tracker
-    # send phone number to authorize with predefined template
-    message = twilio_client.messages.create(to=TRACKER_1, from_=TWILIO_NUMBER,
-                                     body="admin123456 " + phone)
-    # Wooooo admin added
-    stringy = """
-        <h1>Add admin request sent</h1>
-        Added admin: {}<br>
-        Sms id: {}<br>
-        Status: {}<br>
-    """.format(phone, message.sid, message.status)
-
-    return(stringy)
-
-@app.route('/apn', methods=['POST', 'GET'])
-def set_apn():
-    # Add an authorized number to the tracker
-    # send phone number to authorize with predefined template
-    message = twilio_client.messages.create(to=TRACKER_1, from_=TWILIO_NUMBER,
-                                     body="check123456")
-    # Wooooo admin added
-    stringy = """
-        <h1>APN request sent</h1>
-        Sms id: {}<br>
-        Status: {}<br>
-        Sms body: {}<br>
-    """.format(message.sid, message.status, message.body)
-
-    return(stringy)
+    return render_template("pinged.html", pings=pings.data, email=email)
 
 @app.errorhandler(500)
 def server_error(e):
