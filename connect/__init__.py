@@ -1,2 +1,2 @@
-from .database import DB
+from .database import uri
 from .phone import Twilio

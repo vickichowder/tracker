@@ -3,32 +3,34 @@ import os, logging
 from twilio import twiml
 from flask_sqlalchemy import SQLAlchemy
 
+from data.db import db
 from data.position import Position
 from data.tracker import Tracker
 from data.user import User
 
 class Pings:
-    def __init__(self, twilio_client, db, email):
-        # data = dict[tracker_id]: [{time, latitude, longitude}]
+    def __init__(self, twilio_client, email):
+        # data = dict[tracker_id]: [{time, name, link}]
         self.location = {}
         # list of the trackers for this email
-        self.trackers = []
+        self.trackers = {}
         self.email = email
 
         self.get_trackers(db)
-        self.get_locations(db)
         self.refresh(twilio_client, db)
         self.get_locations(db)
 
     def get_trackers(self, db):
         # Query the trackers that belong to this email
-        self.trackers = Tracker.query.join(User, User.user_id=Tracker.user_id).filter_by(User.email=self.email).all()
+        trackers = Tracker.query.with_entities(Tracker.tracker_id, Tracker.tracker_name).join(User, User.user_id==Tracker.user_id).filter(User.email==self.email)
+        for row in trackers:
+            self.trackers[row.tracker_id] = row.tracker_name
 
     def get_locations(self, db):
         # Query the locations for each tracker
         for tracker_id in self.trackers:
             self.location[tracker_id] = []
-            for ping in Position.query.filter_by(tracker_id=tracker_id).order_by(desc(time)).all():
+            for ping in Position.query.filter_by(tracker_id=tracker_id).order_by(desc(Position.time)):
                 self.location[tracker_id].append({
                     'time' : ping.time,
                     'link' : "https://www.google.com/maps?f=q&q={},{}&z=16".format(ping.latitude, ping.longitude)})

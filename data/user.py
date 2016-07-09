@@ -1,6 +1,6 @@
-from flask_sqlalchemy import SQLAlchemy
+from data.db import db
 
-class User(db):
+class User(db.Model):
     user_id = db.Column(db.String(80), unique=True, primary_key=True)
     name = db.Column(db.String(80), unique=True)
     email = db.Column(db.String(120), unique=True)

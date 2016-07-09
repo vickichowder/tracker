@@ -1,6 +1,6 @@
-from flask_sqlalchemy import SQLAlchemy
+from data.db import db
 
-class Tracker(db):
+class Tracker(db.Model):
     tracker_id = db.Column(db.String(12), unique=True, primary_key=True)
     user_id = db.Column(db.String(80))
     tracker_name = db.Column(db.String(120))

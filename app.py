@@ -11,35 +11,27 @@ from runenv import load_env
 from flask_restful import Resource, Api
 from flask_sqlalchemy import SQLAlchemy
 
-from data.base import Base
-from connect.phone import Twilio
-from connect.database import DB
+from data.db import db
 from data.pings import Pings
+from connect.database import uri
+from connect.phone import Twilio
 
+load_env(env_file='.env')
 # Ideally this will not be here. We will eventually containerize this
 # So the environment variables are global in the app
-load_env(env_file='.env')
-# load other stuffs
 TWILIO_NUMBER = os.getenv('TWILIO_NUMBER')
 TRACKER_APP_ID = os.getenv('TRACKER_APP_ID')
 TRACKER_1 = os.getenv('TRACKER_1')
 
-twilio_client = Twilio().client
-session_db = DB()
-
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = session_db.uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+app.config['SQLALCHEMY_DATABASE_URI'] = uri
 app.secret_key = os.getenv('APP_SECRET_KEY')
-db = SQLAlchemy(app)
+db.init_app(app)
+
+twilio_client = Twilio().client
 
 email = None
-
-@app.before_first_request
-def setup():
-    # Recreate database each time for demo
-    Base.metadata.drop_all(bind=db.engine)
-    Base.metadata.create_all(bind=db.engine)
 
 @app.route('/', methods=['POST', 'GET'])
 def landing():
@@ -98,11 +90,11 @@ def status_refresh(call_sid):
     """.format(call.sid, call.to, call.status, call.sid)
     return(stringy)
 
-@app.route('/pings', methods=['POST', 'GET'])
+@app.route('/trackers', methods=['POST', 'GET'])
 def load_pings():
     email = request.args.get('email', '', type=str)
     print('email', email)
-    pings = Pings(twilio_client, db, 'vickalie@hotmail.com')
+    pings = Pings(twilio_client, email)
 
     return render_template("trackers.html", pings=pings.trackers)
 
