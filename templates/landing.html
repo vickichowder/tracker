@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -19,8 +18,21 @@
     <link href="/static/css/landing.css" rel="stylesheet" type="text/css"/>
     <link href="/static/css/fb.css" rel="stylesheet" type="text/css"/>
 
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+
     <!-- Facebook -->
+    <div id="fb-root"></div>
     <script>
+    (function(d, s, id) {
+      var js, fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) return;
+      js = d.createElement(s); js.id = id;
+      js.src = "//connect.facebook.net/en_US/sdk.js#xfbml=1&version=v2.6";
+      fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+
+    var email = '';
+
     window.fbAsyncInit = function() {
       FB.init({
         appId      : '2051263951766432',
@@ -47,24 +59,40 @@
       // for FB.getLoginStatus().
       if (response.status === 'connected') {
         // Logged into your app and Facebook.
-        FB.api('/me', function(response) {
+        FB.api('/me', {fields: 'name, email'}, function(response) {
           console.log('Successful login for: ' + response.name);
+
           document.getElementById('message').innerHTML = `<h1 class="cover-heading">Welcome, `+response.name+`</h1>
           <p class="lead">Would you like to...</p>
           <a href="/pings" class="btn btn-lg btn-default">Ping a tracker</a>`;
-          document.getElementById('logout').innerHTML = `<li><a href="/" onclick="FB.logout();checkLoginState();">Logout</a></li>`;
+
+          document.getElementById('nav').innerHTML = `<li><a href="/pings">Pings</a></li>
+          <li><a href="#">Credits</a></li>`;
+
+          document.getElementById('logout').innerHTML = `<li><a href="/logout" onclick="FB.logout();checkLoginState();">Logout</a></li>`;
+          email = response.email;
         });
       } else {
         document.getElementById('message').innerHTML = `<h1 class="cover-heading">Track anything.</h1>
         <p class="lead">No monthly subscriptions. Pay as you ping.</p>
-        <a class="btn btn-block btn-social btn-facebook" onlogin="checkLoginState();" onclick="FB.login();checkLoginState();">
+        <a class="btn btn-block btn-social btn-facebook" onlogin="checkLoginState();" onclick="login();checkLoginState();">
         <span class="fa fa-facebook"></span> <b>Continue with Facebook</b></a>`;
+
+        document.getElementById('nav').innerHTML = `<li><a href="#">Features</a></li>
+        <li><a href="#">Contact</a></li>`;
       }
     }
     function checkLoginState() {
       FB.getLoginStatus(function(response) {
         statusChangeCallback(response);
       });
+    }
+
+    function login() {
+      FB.login(function(response) {
+        email = response.email;
+        location.reload();
+      }, {scope: 'public_profile,email'});
     }
 
     window.fbAsyncInit = function() {
@@ -88,14 +116,23 @@
       js = d.createElement(s); js.id = id;
       js.src = "//connect.facebook.net/en_US/sdk.js";
       fjs.parentNode.insertBefore(js, fjs);
+      var email_address = '';
+      FB.api('/me',  {fields: 'name, email'}, function(response) {
+        email_adress = response.email;
+      });
     }(document, 'script', 'facebook-jssdk'));
 
-    FB.Event.subscribe('auth.statusChange', auth_status_change_callback);
+    // FB.Event.subscribe('auth.authResponseChange', auth_response_change_callback);
+    // FB.Event.subscribe('auth.statusChange', auth_status_change_callback);
+
+    // In your JavaScript
+    var auth_response_change_callback = function(response) {
+      console.log("auth_response_change_callback");
+      console.log(response);
+    }
+
     var auth_status_change_callback = function(response) {
       console.log("auth_status_change_callback: " + response.status);
-      if (response.status == 'unknown') {
-        window.location.href = "/";
-      }
     }
   </script>
   </head>
@@ -113,18 +150,23 @@
               <h3 class="masthead-brand">Tracker</h3>
               <nav>
                 <ul class="nav masthead-nav">
-                  <li class="active"><a href="/">Home</a></li>
-                  <li><a href="#">Features</a></li>
-                  <li><a href="#">Contact</a></li>
-                  <div id="logout" class="nav masthead-nav"></div>
+                  <li><div id='nav' class="nav masthead-nav"></div></li>
+                  <li><div id="logout" class="nav masthead-nav"></div></li>
                 </ul>
               </nav>
             </div>
           </div>
 
+          {% if logout is defined %}
+          <div class="logout">
+            <center>Goodbye, see you again soon</center>
+          </div>
+          {% endif %}
+
           <div class="inner cover">
             <div id="message"></div>
           </div>
+
 
           <div class="mastfoot">
             <div class="inner">
@@ -138,13 +180,5 @@
 
     </div>
 
-    <!-- Bootstrap core JavaScript
-    ================================================== -->
-    <!-- Placed at the end of the document so the pages load faster -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
-    <script>window.jQuery || document.write('<script src="../../assets/js/vendor/jquery.min.js"><\/script>')</script>
-    <script src="../../dist/js/bootstrap.min.js"></script>
-    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-    <script src="../../assets/js/ie10-viewport-bug-workaround.js"></script>
   </body>
 </html>

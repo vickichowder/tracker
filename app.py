@@ -1,6 +1,6 @@
-import logging
 import os
 import json
+import logging
 
 from datetime import date
 from flask import Flask, request, session, redirect, render_template, url_for, json
@@ -11,29 +11,55 @@ from runenv import load_env
 from flask_restful import Resource, Api
 from flask_sqlalchemy import SQLAlchemy
 
+from data.base import Base
 from connect.phone import Twilio
 from connect.database import DB
 from data.pings import Pings
 
-load_env(env_file='.env')
 # Ideally this will not be here. We will eventually containerize this
 # So the environment variables are global in the app
+load_env(env_file='.env')
+# load other stuffs
 TWILIO_NUMBER = os.getenv('TWILIO_NUMBER')
 TRACKER_APP_ID = os.getenv('TRACKER_APP_ID')
 TRACKER_1 = os.getenv('TRACKER_1')
 
 twilio_client = Twilio().client
-db_client = DB().client
+session_db = DB()
+db_client = session_db.client
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = db_client.uri
+app.config['SQLALCHEMY_DATABASE_URI'] = session_db.uri
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 app.secret_key = os.getenv('APP_SECRET_KEY')
 db = SQLAlchemy(app)
 
-@app.route('/')
+@app.before_first_request
+def setup():
+    # Recreate database each time for demo
+    Base.metadata.drop_all(bind=db.engine)
+    Base.metadata.create_all(bind=db.engine)
+
+@app.route('/', methods=['POST', 'GET'])
 def landing():
-    # Boring af landing page
     return render_template("landing.html")
+
+@app.route('/logout')
+def logout():
+    session.pop('user', None)
+    return redirect('/')
+
+@app.route('/login')
+def login():
+    try:
+        email = request.form['email']
+        if email:
+            session['user'] = True
+            print('Started a session\n')
+    except Exception as e:
+        print(e)
+    return render_template("landing.html")
+
 
 @app.route('/ping', methods=['POST', 'GET'])
 def ping_it():
@@ -60,7 +86,7 @@ def ping_it():
 
 @app.route('/status/<string:call_sid>', methods=['POST', 'GET'])
 def status_refresh(call_sid):
-    # Make a call to the tracker
+    # Get call info
     call = twilio_client.calls.get(call_sid)
 
     # Call details
@@ -79,9 +105,9 @@ def status_refresh(call_sid):
 def load_pings():
     email = request.args.get('email', '', type=str)
     print('email', email)
-    pings = Pings(twilio_client, db, email)
+    pings = Pings(twilio_client, db, 'vickalie@hotmail.com')
 
-    return render_template("pinged.html", pings=pings.data, email=email)
+    return render_template("trackers.html", pings=pings.trackers)
 
 @app.errorhandler(500)
 def server_error(e):
