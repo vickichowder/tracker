@@ -1,8 +1,15 @@
 # Tracker
 
-Currently a skeleton, html webapp to ping for a gps location and display the locations
+Bootstrapped:
+- [x] Landing
+- [x] Signed in
+- [ ] Form for new sign in
+- [ ] List of trackers
+- [ ] Positions of tracker (with 'ping' button)
+
 ### Requirements
-This app uses `python3` so `pip3` should be installed for the following:
+Runs on Python 3
+Install the following with `pip3`:
 ```
 pymysql
 twilio
@@ -16,3 +23,4 @@ Fill in `.env_sample`, rename it to `.env`
 ```
 python3 app.py
 ```
+Point to `localhost:8000`
