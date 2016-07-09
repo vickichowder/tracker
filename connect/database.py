@@ -1,5 +1,4 @@
 import os, logging
-import pymysql
 
 from runenv import load_env
 
@@ -13,15 +12,9 @@ class DB:
             "db" : os.getenv('DB_NAME'),
             "port" : int(os.getenv('DB_PORT')) }
 
-        self.client = self.get_client()
-
-    def get_client(self):
-        # Create and return Twilio client
-        try:
-            client = pymysql.connect(**self.config)
-            print('Retrieved a pymysql connection object')
-            return client
-        except Exception as e:
-            print("Could not establish pymysql connection")
-            print(e)
-            return
+        self.uri = 'mysql://' +\
+            os.getenv('DB_USER') + ':' +\
+            os.getenv('DB_PW') + '@' +\
+            os.getenv('DB_HOST') + ':' +\
+            os.getenv('DB_PORT') + '/' +\
+            os.getenv('DB_NAME')

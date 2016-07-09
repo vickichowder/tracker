@@ -26,13 +26,14 @@ TRACKER_1 = os.getenv('TRACKER_1')
 
 twilio_client = Twilio().client
 session_db = DB()
-db_client = session_db.client
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = session_db.uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 app.secret_key = os.getenv('APP_SECRET_KEY')
 db = SQLAlchemy(app)
+
+email = None
 
 @app.before_first_request
 def setup():
@@ -42,24 +43,20 @@ def setup():
 
 @app.route('/', methods=['POST', 'GET'])
 def landing():
+    try:
+        email = request.form['email']
+        session['user'] = True
+        print('Started a session\n')
+        print(email)
+    except:
+        pass
     return render_template("landing.html")
 
 @app.route('/logout')
 def logout():
     session.pop('user', None)
+    email = None
     return redirect('/')
-
-@app.route('/login')
-def login():
-    try:
-        email = request.form['email']
-        if email:
-            session['user'] = True
-            print('Started a session\n')
-    except Exception as e:
-        print(e)
-    return render_template("landing.html")
-
 
 @app.route('/ping', methods=['POST', 'GET'])
 def ping_it():

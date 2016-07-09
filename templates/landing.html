@@ -31,7 +31,18 @@
       fjs.parentNode.insertBefore(js, fjs);
     }(document, 'script', 'facebook-jssdk'));
 
-    var email = '';
+    var user_email;
+    $.sendemail = function() {$.ajax({
+      url: '/',
+      type: 'POST',
+      data: {email : user_email},
+      success: function(response){
+        console.log(user_email);
+      },
+      error: function(error){
+        console.log(error);
+      }
+    });}
 
     window.fbAsyncInit = function() {
       FB.init({
@@ -61,7 +72,8 @@
         // Logged into your app and Facebook.
         FB.api('/me', {fields: 'name, email'}, function(response) {
           console.log('Successful login for: ' + response.name);
-
+          user_email = response.email
+          $.sendemail();
           document.getElementById('message').innerHTML = `<h1 class="cover-heading">Welcome, `+response.name+`</h1>
           <p class="lead">Would you like to...</p>
           <a href="/pings" class="btn btn-lg btn-default">Ping a tracker</a>`;
@@ -70,7 +82,6 @@
           <li><a href="#">Credits</a></li>`;
 
           document.getElementById('logout').innerHTML = `<li><a href="/logout" onclick="FB.logout();checkLoginState();">Logout</a></li>`;
-          email = response.email;
         });
       } else {
         document.getElementById('message').innerHTML = `<h1 class="cover-heading">Track anything.</h1>
@@ -90,8 +101,6 @@
 
     function login() {
       FB.login(function(response) {
-        email = response.email;
-        location.reload();
       }, {scope: 'public_profile,email'});
     }
 
@@ -116,10 +125,6 @@
       js = d.createElement(s); js.id = id;
       js.src = "//connect.facebook.net/en_US/sdk.js";
       fjs.parentNode.insertBefore(js, fjs);
-      var email_address = '';
-      FB.api('/me',  {fields: 'name, email'}, function(response) {
-        email_adress = response.email;
-      });
     }(document, 'script', 'facebook-jssdk'));
 
     // FB.Event.subscribe('auth.authResponseChange', auth_response_change_callback);
