@@ -1,0 +1,20 @@
+.no-border {
+  padding: 10px;
+  border: none;
+  border-bottom: solid 2px #c9c9c9;
+  transition: border 0.3s;
+  background: transparent;
+  color: #FFFFFF;
+  text-align: center;
+  font-size: 150%;
+  font-weight: bold;
+}
+.no-border.active.focus, .no-border.active:focus, .no-border.focus, .no-border:active.focus, .no-border:active:focus, .no-border:focus {
+  border-bottom: solid 2px #969696;
+  background: transparent;
+  color: #FFFFFF;
+  text-align: center;
+  font-size: 150%;
+  font-weight: bold
+  outline: none !important;
+}

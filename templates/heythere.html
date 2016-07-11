@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="../../favicon.ico">
+
+    <title>Track Anything</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet" type="text/css"/>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/>
+    <!-- Custom styles for this template -->
+    <link href="/static/css/landing.css" rel="stylesheet" type="text/css"/>
+    <link href="/static/css/fb.css" rel="stylesheet" type="text/css"/>
+    <link href="/static/css/heythere.css" rel="stylesheet" type="text/css"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+
+    <!-- Facebook -->
+    <div id="fb-root"></div>
+    <script>
+    (function(d, s, id) {
+      var js, fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) return;
+      js = d.createElement(s); js.id = id;
+      js.src = "//connect.facebook.net/en_US/sdk.js#xfbml=1&version=v2.6";
+      fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+
+    window.fbAsyncInit = function() {
+      FB.init({
+        appId      : '2051263951766432',
+        xfbml      : true,
+        version    : 'v2.6'
+      });
+    };
+
+    (function(d, s, id){
+      var js, fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) {return;}
+      js = d.createElement(s); js.id = id;
+      js.src = "//connect.facebook.net/en_US/sdk.js";
+      fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+
+    var email;
+    var name;
+
+    // This is called with the results from from FB.getLoginStatus().
+    function statusChangeCallback(response) {
+      console.log(response);
+
+      if (response.status === 'connected') {
+        // Logged into your app and Facebook
+        console.log('here');
+        FB.api('/me', {fields: 'name, email'}, function(response) {
+          console.log('Successful login for: ' + response.name);
+          email = response.email;
+          name = response.name
+          console.log('here', email, name);
+          document.getElementById('nav').innerHTML = `<li><a href="/trackers">Trackers</a></li>
+          <li><a href="#">Credits</a></li>`;
+
+          document.getElementById('logout').innerHTML = `<li><a href="/logout" onclick="logout();">Logout</a></li>`;
+
+          document.getElementById('new_user_form').innerHTML = `<h1 class="cover-heading">Hey there, `+response.name+`</h1>
+          <p class="lead">You've never signed in before - can I get your number so we can get you set up?</p>`;
+
+          document.getElementById('nav').innerHTML = `<li><a href="/trackers">Trackers</a></li>
+          <li><a href="#">Credits</a></li>`;
+          console.log('Or this');
+        });
+
+        document.getElementById('phone').onkeydown = function(e) {
+          if(e.keyCode == 13){
+            $.ajax({
+              url: '/firsttime',
+              type: 'POST',
+              data: {email : email,
+                name : name,
+                phone : document.getElementById('phone').value},
+              success: function(response){
+                console.log(email);
+                console.log(name);
+              },
+              error: function(error){
+                console.log(error);
+              }
+            });
+            location.replace('/firsttime')
+          }
+        };
+
+      } else {
+        document.getElementById('message').innerHTML = `<h1 class="cover-heading">Track anything.</h1>
+        <p class="lead">No monthly subscriptions. Pay as you ping.</p>
+        <a class="btn btn-block btn-social btn-facebook" onlogin="checkLoginState();" onclick="login();">
+        <span class="fa fa-facebook"></span> <b>Continue with Facebook</b></a>`;
+
+        document.getElementById('nav').innerHTML = `<li><a href="#">Features</a></li>
+        <li><a href="#">Contact</a></li>`;
+      }
+    }
+    function checkLoginState() {
+      FB.getLoginStatus(function(response) {
+        statusChangeCallback(response);
+      });
+    }
+
+    function login() {
+      FB.login(function(response) {
+      }, {scope: 'public_profile,email'});
+    }
+
+    // Override the FB logout because it's been buggy the past few times during tests
+    // Reload the page after logout to redirect to home
+    function logout() {
+    FB.getLoginStatus(function(response) {
+        if (response && response.status === 'connected') {
+            FB.logout(function(response) {
+                document.location.reload();
+            });
+        }
+      });
+    }
+
+    window.fbAsyncInit = function() {
+      FB.init({
+        appId      : '2051263951766432',
+        cookie     : true,
+        xfbml      : true,  // parse social plugins on this page
+        version    : 'v2.5' // use graph api version 2.5
+      });
+
+      FB.getLoginStatus(function(response) {
+        statusChangeCallback(response);
+      });
+
+    };
+
+    // Load the SDK asynchronously
+    (function(d, s, id) {
+      var js, fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) return;
+      js = d.createElement(s); js.id = id;
+      js.src = "//connect.facebook.net/en_US/sdk.js";
+      fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+
+  </script>
+  </head>
+
+  <body>
+
+    <div class="site-wrapper">
+
+      <div class="site-wrapper-inner">
+
+        <div class="cover-container">
+
+          <div class="masthead clearfix">
+            <div class="inner">
+              <h3 class="masthead-brand">Tracker</h3>
+              <nav>
+                <ul class="nav masthead-nav">
+                  <li><div id='nav' class="nav masthead-nav"></div></li>
+                  <li><div id="logout" class="nav masthead-nav"></div></li>
+                </ul>
+              </nav>
+            </div>
+          </div>
+
+          {% if logout is defined %}
+          <div class="logout-msgs">
+            <center>Goodbye, see you again soon</center>
+          </div>
+          {% else %}
+            <div id="new_user_form" align="center"></div>
+            <input type="text" placeholder="Primary Phone Number" name="phone" class="no-border"/>
+          {% endif %}
+
+          <div class="mastfoot">
+            <div class="inner">
+              <p>tracker by <a href="https://github.com/vickichowder">vickichowder</a>.</p>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </body>
+</html>
