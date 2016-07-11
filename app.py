@@ -2,16 +2,15 @@ import os
 import json
 import logging
 
-from datetime import date
 from flask import Flask, request, session, redirect, render_template, url_for, json
 from twilio import twiml
-from twilio.rest import TwilioRestClient
-from twilio import TwilioRestException
 from runenv import load_env
 from flask_restful import Resource, Api
 from flask_sqlalchemy import SQLAlchemy
 
-from data.db import db
+
+from data.check import in_person, link, in_person_first_time
+from model.db import db
 from data.pings import Pings
 from connect.database import uri
 from connect.phone import Twilio
@@ -20,7 +19,7 @@ load_env(env_file='.env')
 # Ideally this will not be here. We will eventually containerize this
 # So the environment variables are global in the app
 TWILIO_NUMBER = os.getenv('TWILIO_NUMBER')
-TRACKER_APP_ID = os.getenv('TRACKER_APP_ID')
+# TRACKER_APP_ID = os.getenv('TRACKER_APP_ID')
 TRACKER_1 = os.getenv('TRACKER_1')
 
 app = Flask(__name__)
@@ -36,19 +35,49 @@ email = None
 @app.route('/', methods=['POST', 'GET'])
 def landing():
     try:
+        # Go to heythere (prompt phone input) or landing if already signed up
         email = request.form['email']
         session['user'] = True
-        print('Started a session\n')
         print(email)
-    except:
-        pass
-    return render_template("landing.html")
+        if in_person_first_time(email):
+            print('here')
+            return render_template("heythere.html")
+        else:
+            print('here?')
+            return render_template("landing.html")
+    except Exception as e:
+        # Go to landing if fails
+        print(e)
+        return render_template('landing.html')
+        # return render_template("oops.html")
 
 @app.route('/logout')
 def logout():
+    # Get rid of the session vars, take back home
     session.pop('user', None)
     email = None
     return redirect('/')
+
+@app.route('/firsttime', methods=['POST', 'GET'])
+def firstLogin():
+    # Get info on what they're tracking
+    try:
+        phone = request.form['phone']
+        email = request.form['email']
+        if in_person_first_time(phone, email):
+            # Did this person pay in person (we have their phone # but they haven't logged in through FB yet)
+            info = link(phone, email)
+
+            print(email, phone, info)
+            # Link their fb email to this account
+            # returns {user:{user info}, trackers:[{tracker info}]}
+            return render_template("info.html", info=info)
+        else:
+            return render_template("new.html")
+    except:
+        # Fall back home if fail
+        return render_template('landing.html')
+        # return render_template("oops.html")
 
 @app.route('/ping', methods=['POST', 'GET'])
 def ping_it():
