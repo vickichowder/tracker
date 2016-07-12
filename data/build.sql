@@ -4,7 +4,7 @@ use tracker;
 
 create table position(
    tracker_id VARCHAR(12) NOT NULL,
-   pinged_on datetime NOT NULL,
+   `time` datetime NOT NULL,
    latitude DECIMAL(8,5),
    longitude DECIMAL(8,5),
    PRIMARY KEY ( tracker_id, pinged_on, latitude, longitude )
@@ -29,7 +29,7 @@ create table user(
   email varchar(50),
   name varchar(120),
   balance int default 0,
-  type varchar(50) not null default 'User',
+  role varchar(50) not null default 'User',
   primary key (user_id)
 );
 

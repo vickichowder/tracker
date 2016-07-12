@@ -1,6 +1,7 @@
-from data.db import db
+from model.db import db
 
 class Position(db.Model):
+    # Mirrors the position table in db
     tracker_id = db.Column(db.String(12), primary_key=True)
     time = db.Column(db.DateTime, primary_key=True)
     latitude = db.Column(db.Float(precision=5, asdecimal=True), primary_key=True)

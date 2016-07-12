@@ -3,10 +3,10 @@ import os, logging
 from twilio import twiml
 from flask_sqlalchemy import SQLAlchemy
 
-from data.db import db
-from data.position import Position
-from data.tracker import Tracker
-from data.user import User
+from model.db import db
+from model.position import Position
+from model.tracker import Tracker
+from model.user import User
 
 class Pings:
     def __init__(self, twilio_client, email):
