@@ -1,5 +1,4 @@
 *.pyc
 *.pyo
 .env
-*pycache*
-*.sql
+__pycache__/
