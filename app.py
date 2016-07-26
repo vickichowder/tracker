@@ -10,7 +10,8 @@ from flask_restful import Resource, Api
 from flask_sqlalchemy import SQLAlchemy
 
 # Include our own models
-from data.check import in_person, link, in_person_first_time
+from data.check import in_person, link, in_person_first_time, get_new_tracker, get_trackers, get_user_id
+from data.tracker import tracker_info
 from model.db import db
 from data.pings import Pings
 from connect.database import uri
@@ -37,10 +38,7 @@ twilio_client = Twilio().client
 @app.route('/', methods=['GET', 'POST'])
 def landing():
     if request.method == 'POST':
-        session['email'] = request.form['email']
-        session['name'] = request.form['name']
-        session['user'] = True
-        print('session["user"]:', session['user'])
+        # Init all session vars
         return home()
     else:
         print('not logged in')
@@ -48,49 +46,62 @@ def landing():
 
 @app.route('/home', methods=['GET', 'POST'])
 def home():
-    print('home:', session['email'], session['name'])
-    if in_person_first_time(session['email'], 'fb'):
-        print('first time user login')
+    if request.method == 'POST':
+        # Init all session vars
+        session['email'] = request.form['email']
+        session['name'] = request.form['name']
+        session['media'] = request.form['media']
+        session['user'] = True
+
+    if in_person_first_time(session['email'], session['media']):
+        # First time this person has logged in, we need to get their email
         return render_template("welcome.html")
+
+    session['user_id'] = get_user_id(session['email'], session['media'])
+    print('user id:', session['user_id'])
+
+    new_trackers = get_new_tracker(session['user_id'])
+    if len(new_trackers) > 0:
+        # There are uninitialized trackers
+        return new_tracker(new_trackers)
     else:
-        # Take then to their trackers
-        session['pings'] = Pings(twilio_client, session['email'])
-        return redirect(url_for('trackers'))
+        # Go to the page of trackers
+        return trackers()
 
 @app.route('/trackers', methods=['POST', 'GET'])
 def trackers():
-    print('email:', session['email'])
     # Get the list of trackers
-
+    session['trackers'] = get_trackers(session['user_id'])
     return render_template("trackers.html", pings=session['pings'].trackers)
 
-@app.route('/logout')
-def logout():
-    # Get rid of the session vars
-    session['user'] = False
-    session.pop('email', None)
-    session.pop('name', None)
-    session.pop('phone', None)
-    session.pop('pings', None)
-    # Go home
-    return redirect('/')
-
 @app.route('/new', methods=['POST', 'GET'])
-def firstLogin():
-    try:
-        # Get info on what they're tracking
-        # Name, vehicle info
+def new():
+    if request.method == 'POST':
+        # Get their primary number
         session['phone'] = request.form['phone']
         # Link their fb email to their phone number
-        # returns {user:{user info}, trackers:[{tracker info}]}
-        info = link(session['phone'], session['email'], 'fb')
-        print(info)
+        linked = link(session['phone'], session['email'], session['media'], session['name'])
+        session['user_id'] = get_user_id(session['email'], session['media'])
+        print('user id:', session['user_id'])
+        if not linked:
+            # Take them back to enter their number again
+            return render_template("welcome.html", try_again='true')
 
-        return render_template("info.html", info=info)
-    except Exception as e:
-        # Fall back home if fail
-        print(e)
-        return render_template('landing.html')
+    # Get any new trackers they need to init
+    new_trackers = get_new_tracker(session['user_id'])
+    if len(new_trackers) > 0:
+        # They have an unintialized tracker they need to verify
+        return new_tracker(new_trackers)
+    elif len(new_trackers) == 0:
+        # No trackers for them to initialize
+        return home()
+
+@app.route('/new_tracker', methods=['POST', 'GET'])
+def new_tracker(trackers):
+    # Get the list of new trackers
+    print(trackers)
+    info = tracker_info(trackers)
+    return render_template("info.html", info=info)
 
 @app.route('/ping', methods=['POST', 'GET'])
 def ping_it():
@@ -133,6 +144,18 @@ def status_refresh(call_sid):
     """.format(call.sid, call.to, call.status, call.sid)
     return(stringy)
 
+@app.route('/logout')
+def logout():
+    # Get rid of the session vars
+    session.pop('user', None)
+    session.pop('email', None)
+    session.pop('user_id', None)
+    session.pop('name', None)
+    session.pop('media', None)
+    session.pop('phone', None)
+    session.pop('pings', None)
+    # Go home
+    return redirect('/')
 
 @app.errorhandler(500)
 def server_error(e):
