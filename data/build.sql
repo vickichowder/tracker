@@ -26,13 +26,15 @@ create table tracker(
 create table user(
   user_id int not null auto_increment,
   phone varchar(10) not null unique,
-  email varchar(50),
   name varchar(120),
+  email varchar(80) default null, -- contact email
+  fb_email varchar(80) default null,
+  google_email varchar(80) default null,
   balance int default 0,
   role varchar(50) not null default 'User',
   primary key (user_id)
 );
 
-insert into user (phone, email, name) values('4169392992', null, null);
+insert into user (phone, name) values('4169392992', null);
 
 insert into tracker (tracker_id, user_id, tracker_name, imei) values ('+16478776809', 1, 'The first one', '123456789012345');

@@ -31,19 +31,6 @@
       fjs.parentNode.insertBefore(js, fjs);
     }(document, 'script', 'facebook-jssdk'));
 
-    var user_email;
-    $.sendemail = function() {$.ajax({
-      url: '/',
-      type: 'POST',
-      data: {email : user_email},
-      success: function(response){
-        console.log(user_email);
-      },
-      error: function(error){
-        console.log(error);
-      }
-    });}
-
     window.fbAsyncInit = function() {
       FB.init({
         appId      : '2051263951766432',
@@ -62,8 +49,7 @@
 
     // This is called with the results from from FB.getLoginStatus().
     function statusChangeCallback(response) {
-      console.log('statusChangeCallback');
-      console.log(response);
+      console.log('statusChangeCallback', response);
       // The response object is returned with a status field that lets the
       // app know the current login status of the person.
       // Full docs on the response object can be found in the documentation
@@ -71,37 +57,60 @@
       if (response.status === 'connected') {
         // Logged into your app and Facebook.
         FB.api('/me', {fields: 'name, email'}, function(response) {
-          console.log('Successful login for: ' + response.name);
-          user_email = response.email
-          $.sendemail();
+          console.log('Landing page: Successful login for: ' + response.name);
+
+          document.getElementById('logout').innerHTML = `<li><a onclick="logout();">Logout</a></li>`;
+
           document.getElementById('message').innerHTML = `<h1 class="cover-heading">Welcome, `+response.name+`</h1>
           <p class="lead">Would you like to...</p>
-          <a href="/pings" class="btn btn-lg btn-default">Ping a tracker</a>`;
+          <a href="/trackers" class="btn btn-lg btn-default">Ping a tracker</a>`;
 
-          document.getElementById('nav').innerHTML = `<li><a href="/pings">Pings</a></li>
+          document.getElementById('nav').innerHTML = `<li><a href="/trackers">Trackers</a></li>
           <li><a href="#">Credits</a></li>`;
-
-          document.getElementById('logout').innerHTML = `<li><a href="/logout" onclick="FB.logout();checkLoginState();">Logout</a></li>`;
         });
       } else {
         document.getElementById('message').innerHTML = `<h1 class="cover-heading">Track anything.</h1>
         <p class="lead">No monthly subscriptions. Pay as you ping.</p>
-        <a class="btn btn-block btn-social btn-facebook" onlogin="checkLoginState();" onclick="login();checkLoginState();">
+        <a class="btn btn-block btn-social btn-facebook" onlogin="checkLoginState();" onclick="login();">
         <span class="fa fa-facebook"></span> <b>Continue with Facebook</b></a>`;
 
         document.getElementById('nav').innerHTML = `<li><a href="#">Features</a></li>
         <li><a href="#">Contact</a></li>`;
       }
     }
+
     function checkLoginState() {
       FB.getLoginStatus(function(response) {
         statusChangeCallback(response);
       });
     }
 
+    // Force redirect/refresh after login, regardless of successful or not
     function login() {
       FB.login(function(response) {
-      }, {scope: 'public_profile,email'});
+        FB.api('/me', {fields: 'name, email'}, function(response) {
+          console.log('Logging in: ' + response.name);
+          $.ajax({
+            url: '/home',
+            type: 'POST',
+            data: {'email' : response.email, 'name' : response.name}
+          });
+          console.log('Signing in: ' + response.name);
+          window.location.href = '/home';
+        });
+      }, {scope: 'public_profile, email'});
+    }
+
+    // Override the FB logout because it's been buggy the past few times during tests
+    // Reload the page after logout to redirect to home
+    function logout() {
+      FB.getLoginStatus(function(response) {
+        if (response && response.status === 'connected') {
+            FB.logout(function(response) {
+                window.location.href = '/';
+            });
+        }
+      });
     }
 
     window.fbAsyncInit = function() {
@@ -117,28 +126,6 @@
       });
 
     };
-
-    // Load the SDK asynchronously
-    (function(d, s, id) {
-      var js, fjs = d.getElementsByTagName(s)[0];
-      if (d.getElementById(id)) return;
-      js = d.createElement(s); js.id = id;
-      js.src = "//connect.facebook.net/en_US/sdk.js";
-      fjs.parentNode.insertBefore(js, fjs);
-    }(document, 'script', 'facebook-jssdk'));
-
-    // FB.Event.subscribe('auth.authResponseChange', auth_response_change_callback);
-    // FB.Event.subscribe('auth.statusChange', auth_status_change_callback);
-
-    // In your JavaScript
-    var auth_response_change_callback = function(response) {
-      console.log("auth_response_change_callback");
-      console.log(response);
-    }
-
-    var auth_status_change_callback = function(response) {
-      console.log("auth_status_change_callback: " + response.status);
-    }
   </script>
   </head>
 
@@ -155,7 +142,7 @@
               <h3 class="masthead-brand">Tracker</h3>
               <nav>
                 <ul class="nav masthead-nav">
-                  <li><div id='nav' class="nav masthead-nav"></div></li>
+                  <li><div id="nav" class="nav masthead-nav"></div></li>
                   <li><div id="logout" class="nav masthead-nav"></div></li>
                 </ul>
               </nav>

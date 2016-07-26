@@ -17,7 +17,7 @@
     <!-- Custom styles for this template -->
     <link href="/static/css/landing.css" rel="stylesheet" type="text/css"/>
     <link href="/static/css/fb.css" rel="stylesheet" type="text/css"/>
-    <link href="/static/css/heythere.css" rel="stylesheet" type="text/css"/>
+    <link href="/static/css/welcome.css" rel="stylesheet" type="text/css"/>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
 
@@ -40,70 +40,34 @@
       });
     };
 
-    (function(d, s, id){
-      var js, fjs = d.getElementsByTagName(s)[0];
-      if (d.getElementById(id)) {return;}
-      js = d.createElement(s); js.id = id;
-      js.src = "//connect.facebook.net/en_US/sdk.js";
-      fjs.parentNode.insertBefore(js, fjs);
-    }(document, 'script', 'facebook-jssdk'));
-
     var email;
     var name;
+    var phone;
 
     // This is called with the results from from FB.getLoginStatus().
     function statusChangeCallback(response) {
       console.log(response);
 
       if (response.status === 'connected') {
-        // Logged into your app and Facebook
-        console.log('here');
         FB.api('/me', {fields: 'name, email'}, function(response) {
-          console.log('Successful login for: ' + response.name);
+          console.log('Welcome page to get number for: ' + response.name);
           email = response.email;
-          name = response.name
-          console.log('here', email, name);
-          document.getElementById('nav').innerHTML = `<li><a href="/trackers">Trackers</a></li>
-          <li><a href="#">Credits</a></li>`;
+          name = response.name;
 
-          document.getElementById('logout').innerHTML = `<li><a href="/logout" onclick="logout();">Logout</a></li>`;
+          document.getElementById('logout').innerHTML = `<li><a onclick="logout();">Logout</a></li>`;
 
           document.getElementById('new_user_form').innerHTML = `<h1 class="cover-heading">Hey there, `+response.name+`</h1>
-          <p class="lead">You've never signed in before - can I get your number so we can get you set up?</p>`;
+            <p class="lead">You've never signed in before - can I get your number so we can get you set up?</p>
+            <input type="text" placeholder="Primary Phone Number" id="phone" name="phone" class="no-border"/>`;
 
           document.getElementById('nav').innerHTML = `<li><a href="/trackers">Trackers</a></li>
-          <li><a href="#">Credits</a></li>`;
-          console.log('Or this');
+            <li><a href="#">Credits</a></li>`;
+
         });
 
-        document.getElementById('phone').onkeydown = function(e) {
-          if(e.keyCode == 13){
-            $.ajax({
-              url: '/firsttime',
-              type: 'POST',
-              data: {email : email,
-                name : name,
-                phone : document.getElementById('phone').value},
-              success: function(response){
-                console.log(email);
-                console.log(name);
-              },
-              error: function(error){
-                console.log(error);
-              }
-            });
-            location.replace('/firsttime')
-          }
-        };
-
       } else {
-        document.getElementById('message').innerHTML = `<h1 class="cover-heading">Track anything.</h1>
-        <p class="lead">No monthly subscriptions. Pay as you ping.</p>
-        <a class="btn btn-block btn-social btn-facebook" onlogin="checkLoginState();" onclick="login();">
-        <span class="fa fa-facebook"></span> <b>Continue with Facebook</b></a>`;
-
-        document.getElementById('nav').innerHTML = `<li><a href="#">Features</a></li>
-        <li><a href="#">Contact</a></li>`;
+        // Redirect back to landing
+        logout();
       }
     }
     function checkLoginState() {
@@ -112,18 +76,13 @@
       });
     }
 
-    function login() {
-      FB.login(function(response) {
-      }, {scope: 'public_profile,email'});
-    }
-
     // Override the FB logout because it's been buggy the past few times during tests
-    // Reload the page after logout to redirect to home
+    // Reload the page after logout to refresh to home
     function logout() {
-    FB.getLoginStatus(function(response) {
+      FB.getLoginStatus(function(response) {
         if (response && response.status === 'connected') {
             FB.logout(function(response) {
-                document.location.reload();
+                window.location.href = '/';
             });
         }
       });
@@ -143,15 +102,6 @@
 
     };
 
-    // Load the SDK asynchronously
-    (function(d, s, id) {
-      var js, fjs = d.getElementsByTagName(s)[0];
-      if (d.getElementById(id)) return;
-      js = d.createElement(s); js.id = id;
-      js.src = "//connect.facebook.net/en_US/sdk.js";
-      fjs.parentNode.insertBefore(js, fjs);
-    }(document, 'script', 'facebook-jssdk'));
-
   </script>
   </head>
 
@@ -170,19 +120,12 @@
                 <ul class="nav masthead-nav">
                   <li><div id='nav' class="nav masthead-nav"></div></li>
                   <li><div id="logout" class="nav masthead-nav"></div></li>
-                </ul>
+                </ul
               </nav>
             </div>
           </div>
 
-          {% if logout is defined %}
-          <div class="logout-msgs">
-            <center>Goodbye, see you again soon</center>
-          </div>
-          {% else %}
-            <div id="new_user_form" align="center"></div>
-            <input type="text" placeholder="Primary Phone Number" name="phone" class="no-border"/>
-          {% endif %}
+          <div id="new_user_form" align="center"></div>
 
           <div class="mastfoot">
             <div class="inner">
@@ -198,3 +141,30 @@
 
   </body>
 </html>
+<script>
+  $( document ).ready(function() {
+    document.getElementById('phone').onkeydown = function(e) {
+      if(e.keyCode == 13){
+        phone = document.getElementById('phone').value;
+        if (/^\d{10}$/.test(phone)) {
+          $.ajax({
+            url: '/new',
+            type: 'POST',
+            // Get their fb email, name, and then phone number they just inputted
+            data: {'phone' : phone},
+            success: function(response){
+              console.log(phone);
+              // Send them to the new tracker confirmation form
+              window.location.href = '/new';
+            }
+          });
+        } else {
+          // Make sure they enter a 10 digit phone number
+          alert("Your phone number should be 10 digits!")
+          number.focus();
+          return false;
+        }
+      }
+    }
+  });
+</script>

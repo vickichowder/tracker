@@ -1,6 +1,7 @@
 import os
 import json
-import logging
+# For debugging
+import logging, traceback
 
 from flask import Flask, request, session, redirect, render_template, url_for, json
 from twilio import twiml
@@ -8,80 +9,93 @@ from runenv import load_env
 from flask_restful import Resource, Api
 from flask_sqlalchemy import SQLAlchemy
 
-
+# Include our own models
 from data.check import in_person, link, in_person_first_time
 from model.db import db
 from data.pings import Pings
 from connect.database import uri
 from connect.phone import Twilio
 
+# Create and fill out .env file from .env_sample
 load_env(env_file='.env')
-# Ideally this will not be here. We will eventually containerize this
+# Ideally this will not be here. We will hopefully dockerize/containerize this
 # So the environment variables are global in the app
 TWILIO_NUMBER = os.getenv('TWILIO_NUMBER')
-# TRACKER_APP_ID = os.getenv('TRACKER_APP_ID')
 TRACKER_1 = os.getenv('TRACKER_1')
 
+# initialize the flask app
 app = Flask(__name__)
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
-app.config['SQLALCHEMY_DATABASE_URI'] = uri
 app.secret_key = os.getenv('APP_SECRET_KEY')
+# sqlalchemy track mod is required to speed up queries
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+# access our database
+app.config['SQLALCHEMY_DATABASE_URI'] = uri
 db.init_app(app)
 
 twilio_client = Twilio().client
 
-email = None
-
-@app.route('/', methods=['POST', 'GET'])
+@app.route('/', methods=['GET', 'POST'])
 def landing():
-    try:
-        # Go to heythere (prompt phone input) or landing if already signed up
-        email = request.form['email']
+    if request.method == 'POST':
+        session['email'] = request.form['email']
+        session['name'] = request.form['name']
         session['user'] = True
-        print(email)
-        if in_person_first_time(email):
-            print('here')
-            return render_template("heythere.html")
-        else:
-            print('here?')
-            return render_template("landing.html")
-    except Exception as e:
-        # Go to landing if fails
-        print(e)
+        print('session["user"]:', session['user'])
+        return home()
+    else:
+        print('not logged in')
         return render_template('landing.html')
-        # return render_template("oops.html")
+
+@app.route('/home', methods=['GET', 'POST'])
+def home():
+    print('home:', session['email'], session['name'])
+    if in_person_first_time(session['email'], 'fb'):
+        print('first time user login')
+        return render_template("welcome.html")
+    else:
+        # Take then to their trackers
+        session['pings'] = Pings(twilio_client, session['email'])
+        return redirect(url_for('trackers'))
+
+@app.route('/trackers', methods=['POST', 'GET'])
+def trackers():
+    print('email:', session['email'])
+    # Get the list of trackers
+
+    return render_template("trackers.html", pings=session['pings'].trackers)
 
 @app.route('/logout')
 def logout():
-    # Get rid of the session vars, take back home
-    session.pop('user', None)
-    email = None
+    # Get rid of the session vars
+    session['user'] = False
+    session.pop('email', None)
+    session.pop('name', None)
+    session.pop('phone', None)
+    session.pop('pings', None)
+    # Go home
     return redirect('/')
 
-@app.route('/firsttime', methods=['POST', 'GET'])
+@app.route('/new', methods=['POST', 'GET'])
 def firstLogin():
-    # Get info on what they're tracking
     try:
-        phone = request.form['phone']
-        email = request.form['email']
-        if in_person_first_time(phone, email):
-            # Did this person pay in person (we have their phone # but they haven't logged in through FB yet)
-            info = link(phone, email)
+        # Get info on what they're tracking
+        # Name, vehicle info
+        session['phone'] = request.form['phone']
+        # Link their fb email to their phone number
+        # returns {user:{user info}, trackers:[{tracker info}]}
+        info = link(session['phone'], session['email'], 'fb')
+        print(info)
 
-            print(email, phone, info)
-            # Link their fb email to this account
-            # returns {user:{user info}, trackers:[{tracker info}]}
-            return render_template("info.html", info=info)
-        else:
-            return render_template("new.html")
-    except:
+        return render_template("info.html", info=info)
+    except Exception as e:
         # Fall back home if fail
+        print(e)
         return render_template('landing.html')
-        # return render_template("oops.html")
 
 @app.route('/ping', methods=['POST', 'GET'])
 def ping_it():
     # Make a call to the tracker
+    # The tracker will acknoledge the call and then hang up
     call = twilio_client.calls.create(
         to=TRACKER_1,
         from_=TWILIO_NUMBER,
@@ -119,13 +133,6 @@ def status_refresh(call_sid):
     """.format(call.sid, call.to, call.status, call.sid)
     return(stringy)
 
-@app.route('/trackers', methods=['POST', 'GET'])
-def load_pings():
-    email = request.args.get('email', '', type=str)
-    print('email', email)
-    pings = Pings(twilio_client, email)
-
-    return render_template("trackers.html", pings=pings.trackers)
 
 @app.errorhandler(500)
 def server_error(e):
