@@ -41,7 +41,7 @@ def landing():
         # Init all session vars
         return home()
     else:
-        print('not logged in')
+        # Not logged in
         return render_template('landing.html')
 
 @app.route('/home', methods=['GET', 'POST'])
@@ -72,7 +72,7 @@ def home():
 def trackers():
     # Get the list of trackers
     session['trackers'] = get_trackers(session['user_id'])
-    return render_template("trackers.html", pings=session['pings'].trackers)
+    return render_template("trackers.html", pings=session['trackers'])
 
 @app.route('/new', methods=['POST', 'GET'])
 def new():
@@ -98,10 +98,11 @@ def new():
 
 @app.route('/new_tracker', methods=['POST', 'GET'])
 def new_tracker(trackers):
-    # Get the list of new trackers
-    print(trackers)
+    # List of zipped tracker info:
+    # [zip(tracker_id, tracker_name, imei, type_, make, model, year, color)]
     info = tracker_info(trackers)
-    return render_template("info.html", info=info)
+    print(info)
+    return render_template("info.html", trackers=info)
 
 @app.route('/ping', methods=['POST', 'GET'])
 def ping_it():
