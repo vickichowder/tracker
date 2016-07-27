@@ -53,6 +53,9 @@ def home():
         session['media'] = request.form['media']
         session['user'] = True
 
+    if session['user']:
+        print('Session vars', session['email'], session['name'], session['media'])
+
     if in_person_first_time(session['email'], session['media']):
         # First time this person has logged in, we need to get their email
         return render_template("welcome.html")
@@ -60,10 +63,13 @@ def home():
     session['user_id'] = get_user_id(session['email'], session['media'])
     print('user id:', session['user_id'])
 
-    new_trackers = get_new_tracker(session['user_id'])
-    if len(new_trackers) > 0:
+    # List of dicts with tracker info:
+    # [{tracker_id, tracker_name, imei, type_, make, model, year, color}]
+    session['new_trackers'] = get_new_tracker(session['user_id'])
+    session['new_tracker_info'] = tracker_info(session['new_trackers'])
+    if len(session['new_trackers']) > 0:
         # There are uninitialized trackers
-        return new_tracker(new_trackers)
+        return new_tracker()
     else:
         # Go to the page of trackers
         return trackers()
@@ -88,21 +94,30 @@ def new():
             return render_template("welcome.html", try_again='true')
 
     # Get any new trackers they need to init
-    new_trackers = get_new_tracker(session['user_id'])
-    if len(new_trackers) > 0:
+    if len(session['new_trackers']) > 0:
         # They have an unintialized tracker they need to verify
-        return new_tracker(new_trackers)
-    elif len(new_trackers) == 0:
+        return new_tracker(session['new_trackers'])
+    else:
         # No trackers for them to initialize
         return home()
 
 @app.route('/new_tracker', methods=['POST', 'GET'])
-def new_tracker(trackers):
-    # List of zipped tracker info:
-    # [zip(tracker_id, tracker_name, imei, type_, make, model, year, color)]
-    info = tracker_info(trackers)
-    print(info)
-    return render_template("info.html", trackers=info)
+def new_tracker():
+    print('New Trackers:', session['new_tracker_info'])
+    # For simplicity, render one form/one tracker's info at a time
+    # After a submit, check if there are any more new trackers to initialize
+    if request.method == 'POST':
+        if (len(session['new_trackers']) > 1) and (request.form['submit'] == 'success'):
+            session['new_trackers'] = session['new_trackers'][1:]
+            session['new_tracker_info'] = session['new_tracker_info'][1:]
+
+    if len(session['new_trackers']) > 0:
+        print('Uninitialized tracker!')
+        print(session['new_tracker_info'][0])
+        return render_template("info.html", tracker=session['new_tracker_info'][0])
+    else:
+        print('No new trackers')
+        return trackers()
 
 @app.route('/ping', methods=['POST', 'GET'])
 def ping_it():

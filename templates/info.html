@@ -33,32 +33,6 @@
       fjs.parentNode.insertBefore(js, fjs);
     }(document, 'script', 'facebook-jssdk'));
 
-    var user_email;
-    var user_fb_name;
-
-    $.sendemail = function() {$.ajax({
-      url: '/',
-      type: 'POST',
-      data: {email : user_email},
-      success: function(response){
-        console.log(user_email);
-      },
-      error: function(error){
-        console.log(error);
-      }
-    });}
-    $.sendfbname = function() {$.ajax({
-      url: '/',
-      type: 'POST',
-      data: {email : user_fb_name, },
-      success: function(response){
-        console.log(user_fb_name);
-      },
-      error: function(error){
-        console.log(error);
-      }
-    });}
-
     window.fbAsyncInit = function() {
       FB.init({
         appId      : '2051263951766432',
@@ -151,47 +125,36 @@
           {% else %}
           <div class="inner">
             <p><h3>Finish setting up your tracker! Here's what we have so far:</h3></p>
-            <ul class="nav nav-tabs">
-            {% for tracker in trackers %}
-              {% if loop.index == 0 %}
-                <li class="active">
-              {% else %}
-                <li>
-              {% endif %}
-              <a href="#{{ tracker.tracker_name }}" data-toggle="tab">{{ tracker.tracker_name }}<i class="fa"></i></a></li>
-            {% endfor %}
-            </ul>
-            <div>{{ trackers }}</div>
-            {% for tracker in trackers %}
-            <div>{{ tracker }}</div>
-            <form method="post" class="form-horizontal">
+            <!-- The form with pre-existing tracker information -->
+            <form method="post" class="form-horizontal" id="trackerForm">
             <div class="tab-content">
+            </br>
                 <div class="tab-pane active" id="info-tab">
                     <div class="form-group">
                         <label class="col-xs-3 control-label">Tracker Name</label>
                         <div class="col-xs-5">
-                            <input type="text" class="form-control" name="tracker_name" placeholder="{{ tracker[tracker_name] }}" />
+                            <input type="text" class="form-control" name="tracker_name" value="{{ tracker.tracker_name }}" />
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label class="col-xs-3 control-label">IMEI</label>
                         <div class="col-xs-5">
-                            <b>{{ tracker[imei] }}</b>
+                            <b>{{ tracker.imei }}</b>
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label class="col-xs-3 control-label">Make</label>
                         <div class="col-xs-5">
-                            <input type="text" class="form-control" name="make" placeholder="{{ tracker[make] }}"/>
+                            <input type="text" class="form-control" name="make" value="{{ tracker.make }}"/>
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label class="col-xs-3 control-label">Model</label>
                         <div class="col-xs-5">
-                            <input type="text" class="form-control" name="model" placeholder="{{ tracker[model] }}"/>
+                            <input type="text" class="form-control" name="model" value="{{ tracker.model }}"/>
                         </div>
                     </div>
                 </div>
@@ -199,19 +162,19 @@
                     <div class="form-group">
                         <label class="col-xs-3 control-label">Year</label>
                         <div class="col-xs-5">
-                            <select class="form-control" name="year" placeholder="{{ tracker[year] }}"><div id="year"></div></select>
+                            <select class="form-control" name="year" value="{{ tracker.year }}" id="year"></select>
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label class="col-xs-3 control-label">Color</label>
                         <div class="col-xs-5">
-                            <select class="form-control" name="color" placeholder="{{ tracker[color] }}"><div id="colors"></div></select>
+                            <select class="form-control" name="color" value="{{ tracker.color }}" id="colors"></select>
                         </div>
                     </div>
                 </div>
             </div>
-            {% endfor %}
+            <button type="submit" value=" Send" class="btn btn-success" id="submit" />Submit</button>
           {% endif %}
         </div>
 
@@ -226,26 +189,46 @@
       </div>
 
     </div>
-  <script>
-  // window.onload = function() {
-  //   // year drop down list
-  //   var start = 1900;
-  //   var d = new Date();
-  //   var end = d.getFullYear() + 1;
-  //   var options = "";
-  //   for (var year = start ; year <= end ; year++) {
-  //     options += "<option value="+year+">"+year+"</option>";
-  //   }
-  //   document.getElementById("year").innerHTML = options;
-  //
-  //   // color drop down list
-  //   var colors = ["Color", "Black", "Blue", "Gray", "Black", "Silver", "White", "Red", "Yellow", "Other"];
-  //   var options = "";
-  //   colors.forEach(function(color) {
-  //     options += "<option value="+color+">"+color+"</option>";
-  //   });
-  //   document.getElementById("colors").innerHTML = options;
-  // }
-  </script>
   </body>
 </html>
+<script>
+  window.onload = function() {
+    // year drop down list
+    var start = 1950;
+    var d = new Date();
+    var end = d.getFullYear() + 1;
+    var options = "";
+    for (var year = start ; year <= end ; year++) {
+      options += "<option value="+year+">"+year+"</option>";
+    }
+    document.getElementById("year").innerHTML = options;
+
+    // color drop down list
+    var colors = ["Color", "Black", "Blue", "Gray", "Black", "Silver", "White", "Red", "Yellow", "Other"];
+    var options = "";
+    colors.forEach(function(color) {
+      options += "<option value="+color+">"+color+"</option>";
+    });
+    document.getElementById("colors").innerHTML = options;
+  }
+
+  document.getElementById("submit").onclick = function(e) {
+    var data = $('trackerForm').serialize();
+    $.ajax({
+      url: '/new_tracker',
+      type: 'POST',
+      data: data,
+      success: function(response){
+        $.ajax({
+          url: '/new_tracker',
+          type: 'POST',
+          data: {'submit' : 'success'},
+          success: function(response){
+            // Send them to the new tracker confirmation form
+            window.location.href = '/new_tracker';
+          }
+        });
+      }
+    });
+  }
+</script>
