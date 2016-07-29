@@ -3,36 +3,36 @@ import json
 # For debugging
 import logging, traceback
 
-from flask import Flask, request, session, redirect, render_template, url_for, json
+from flask import Flask, request, session, redirect, render_template, url_for, jsonify
 from twilio import twiml
 from runenv import load_env
 from flask_sqlalchemy import SQLAlchemy
 
 # Include our own models
 from data.check import in_person, link, in_person_first_time, get_new_tracker, get_trackers, get_user_id
-from data.tracker import get_info, init
+from data.tracker import get_info, init, get_trackers, get_locations, sync, get_tracker_id
 from model.db import db
-from data.pings import Pings
 from connect.database import uri
-from connect.phone import Twilio
 
 # Create and fill out .env file from .env_sample
 load_env(env_file='.env')
 # Ideally this will not be here. We will hopefully dockerize/containerize this
 # So the environment variables are global in the app
 TWILIO_NUMBER = os.getenv('TWILIO_NUMBER')
-TRACKER_1 = os.getenv('TRACKER_1')
 
 # initialize the flask app
 app = Flask(__name__)
+
+# Secret key so our session vars stay safe
 app.secret_key = os.getenv('APP_SECRET_KEY')
+
 # sqlalchemy track mod is required to speed up queries
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
-# access our database
+
+# access database
 app.config['SQLALCHEMY_DATABASE_URI'] = uri
 db.init_app(app)
 
-twilio_client = Twilio().client
 
 @app.route('/', methods=['GET', 'POST'])
 def landing():
@@ -46,19 +46,17 @@ def landing():
 @app.route('/home', methods=['GET', 'POST'])
 def home():
     if request.method == 'POST':
-        # Init all session vars
+        # Init session vars
         session['email'] = request.form['email']
         session['name'] = request.form['name']
         session['media'] = request.form['media']
         session['user'] = True
 
-    if session['user']:
-        print('Session vars', session['email'], session['name'], session['media'])
-
     if in_person_first_time(session['email'], session['media']):
         # First time this person has logged in, we need to get their email
         return render_template("welcome.html")
 
+    # Save user id into this session
     session['user_id'] = get_user_id(session['email'], session['media'])
     print('user id:', session['user_id'])
 
@@ -68,28 +66,32 @@ def home():
     # So we don't pass the tracker id into front end
     session['new_trackers'] = get_new_tracker(session['user_id'])
     session['new_tracker_info'] = get_info(session['new_trackers'])
+
     if len(session['new_tracker_info']) > 0:
         # There are uninitialized trackers
         return redirect(url_for('new_tracker'))
     else:
-        # Go to the page of trackers
+        # Go to page of trackers
         return redirect(url_for('trackers'))
 
 @app.route('/trackers', methods=['POST', 'GET'])
 def trackers():
-    # Get the list of trackers
-    session['tracker_names'] = get_trackers(session['user_id'])
-    return render_template("trackers.html", pings=session['tracker_names'])
+    # Get list of trackers for this user_id
+    session['tracker_name_id'] = get_trackers(session['user_id'])
+
+    return render_template("trackers.html", tracker_names=list(session['tracker_name_id'].keys()))
 
 @app.route('/new', methods=['POST', 'GET'])
 def new():
     if request.method == 'POST':
         # Get their primary number
         session['phone'] = request.form['phone']
+
         # Link their fb email to their phone number
         linked = link(session['phone'], session['email'], session['media'], session['name'])
         session['user_id'] = get_user_id(session['email'], session['media'])
         print('user id:', session['user_id'])
+
         if not linked:
             # Take them back to enter their number again
             return render_template("welcome.html", try_again='true')
@@ -99,7 +101,7 @@ def new():
         # They have an unintialized tracker they need to verify
         return redirect(url_for('new_tracker'))
     else:
-        # No trackers for them to initialize
+        # No trackers to initialize
         return redirect(url_for('home'))
 
 @app.route('/new_tracker', methods=['POST', 'GET'])
@@ -129,8 +131,16 @@ def new_tracker():
         # There are still uninitialized trackers
         return render_template("info.html", tracker=session['new_tracker_info'][0])
     else:
-        # No new trackers, go to the main trackers page
+        # No more new trackers, go to main trackers page
         return redirect(url_for('trackers'))
+
+@app.route('/tracker/<string:tracker_name>', methods=['POST', 'GET'])
+def tracker_name(tracker_name):
+    # Read locations from db
+    locations = get_locations(get_tracker_id(session['user_id'], tracker_name))
+    print(locations)
+    
+    return render_template("location.html", locations=locations, tracker_name=tracker_name)
 
 @app.route('/ping', methods=['POST', 'GET'])
 def ping_it():
@@ -184,8 +194,9 @@ def logout():
     session.pop('media', None)
     session.pop('phone', None)
     session.pop('pings', None)
+    session.pop('twilio_client', None)
     # Go home
-    return redirect('/')
+    return redirect(url_for('/'))
 
 @app.errorhandler(500)
 def server_error(e):

@@ -2,17 +2,18 @@ create database tracker;
 
 use tracker;
 
-create table position(
+create table `position`(
    tracker_id VARCHAR(12) NOT NULL,
    `time` datetime NOT NULL,
    latitude DECIMAL(8,5),
    longitude DECIMAL(8,5),
-   PRIMARY KEY ( tracker_id, pinged_on, latitude, longitude )
+   PRIMARY KEY ( tracker_id, `time`, latitude, longitude )
 );
 
 create table tracker(
   tracker_id varchar(12) not null unique,
   user_id int not null,
+  added int default 0, -- Initially not added/initialized by user = 0 / False
   tracker_name varchar(80) not null,
   imei varchar(15) unique,
   type_ varchar(50) not null default 'Vehicle',

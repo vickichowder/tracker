@@ -19,6 +19,7 @@
     <link href="/static/css/fb.css" rel="stylesheet" type="text/css"/>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+    <script src="https://use.fontawesome.com/f82f4503f4.js"></script>
 
     <!-- Facebook -->
     <div id="fb-root"></div>
@@ -49,7 +50,8 @@
 
     // This is called with the results from from FB.getLoginStatus().
     function statusChangeCallback(response) {
-      console.log('statusChangeCallback', response);
+      console.log('statusChangeCallback');
+      console.log(response);
       // The response object is returned with a status field that lets the
       // app know the current login status of the person.
       // Full docs on the response object can be found in the documentation
@@ -57,48 +59,26 @@
       if (response.status === 'connected') {
         // Logged into your app and Facebook.
         FB.api('/me', {fields: 'name, email'}, function(response) {
-          console.log('Landing page: Successful login for: ' + response.name);
-
-          document.getElementById('logout').innerHTML = `<li><a onclick="logout();">Logout</a></li>`;
-
-          document.getElementById('message').innerHTML = `<h1 class="cover-heading">Welcome, `+response.name+`</h1>
-          <p class="lead">Would you like to...</p>
-          <a href="/trackers" class="btn btn-lg btn-default">Ping a tracker</a>`;
+          console.log('Successful login for: ' + response.name);
 
           document.getElementById('nav').innerHTML = `<li><a href="/trackers">Trackers</a></li>
           <li><a href="#">Credits</a></li>`;
+
+          document.getElementById('logout').innerHTML = `<li><a href="/logout" onclick="FB.logout();checkLoginState();">Logout</a></li>`;
         });
       } else {
-        document.getElementById('message').innerHTML = `<h1 class="cover-heading">Track anything.</h1>
-        <p class="lead">No monthly subscriptions. Pay as you ping.</p>
-        <a class="btn btn-block btn-social btn-facebook" onlogin="checkLoginState();" onclick="login();">
-        <span class="fa fa-facebook"></span> <b>Continue with Facebook</b></a>`;
-
-        document.getElementById('nav').innerHTML = `<li><a href="#">Features</a></li>
-        <li><a href="#">Contact</a></li>`;
+        location.replace('/');
       }
     }
-
     function checkLoginState() {
       FB.getLoginStatus(function(response) {
         statusChangeCallback(response);
       });
     }
 
-    // Force redirect/refresh after login, regardless of successful or not
     function login() {
       FB.login(function(response) {
-        FB.api('/me', {fields: 'name, email'}, function(response) {
-          console.log('Logging in: ' + response.name);
-          $.ajax({
-            url: '/home',
-            type: 'POST',
-            data: {'email' : response.email, 'name' : response.name, 'media': 'fb'}
-          });
-          console.log('Signing in: ' + response.name);
-          window.location.href = '/home';
-        });
-      }, {scope: 'public_profile, email'});
+      }, {scope: 'public_profile,email'});
     }
 
     // Override the FB logout because it's been buggy the past few times during tests
@@ -126,6 +106,16 @@
       });
 
     };
+
+    // Load the SDK asynchronously
+    (function(d, s, id) {
+      var js, fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) return;
+      js = d.createElement(s); js.id = id;
+      js.src = "//connect.facebook.net/en_US/sdk.js";
+      fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+
   </script>
   </head>
 
@@ -142,21 +132,29 @@
               <h3 class="masthead-brand">Tracker</h3>
               <nav>
                 <ul class="nav masthead-nav">
-                  <li><div id="nav" class="nav masthead-nav"></div></li>
+                  <li><div id='nav' class="nav masthead-nav"></div></li>
                   <li><div id="logout" class="nav masthead-nav"></div></li>
                 </ul>
               </nav>
             </div>
           </div>
 
-          {% if logout is defined %}
-          <div class="logout">
-            <center>Goodbye, see you again soon</center>
-          </div>
-          {% endif %}
-
-          <div class="inner cover">
-            <div id="message"></div>
+          <div class="inner">
+            <h1 class="cover-heading">Your Trackers</h1>
+              {% if tracker_names|length > 0 %}
+                <p><h3>Click on a tracker to view it's location history</h3></p>
+                <div class="list-group">
+                  {% for tracker_name in tracker_names %}
+                  <a href="/tracker/{{ tracker_name }}" class="list-group-item">{{ tracker_name }}</a>
+                </div>
+                  {% endfor %}
+              {% else %}
+              <div class="panel panel-default">
+                <div class="panel-body">
+                  You don't have any trackers yet! <i class="fa fa-frown-o" aria-hidden="true"></i>
+                </div>
+              </div>
+              {% endif %}
           </div>
 
 

@@ -104,6 +104,16 @@ body {
   }
 }
 
+.logout {
+  position: fixed;
+  top: 100px;
+  text-align: center;
+}
+.dissappear {
+  height: 0px;
+  width: 0px;
+}
+
 
 /*
  * Cover
@@ -160,4 +170,11 @@ body {
   .cover-container {
     width: 700px;
   }
+}
+
+.panel > .panel-body {
+    color: #606060 !important;
+}
+.fa {
+    color: #606060 !important;
 }
