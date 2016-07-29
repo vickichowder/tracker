@@ -26,4 +26,4 @@ class Tracker(db.Model):
         self.color = color
 
     def __repr__(self):
-        return '<Tracker %r>' % self.tracker_id
+        return '<Tracker {}>'.format(self.tracker_id)

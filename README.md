@@ -3,12 +3,12 @@
 Bootstrapped:
 - [x] Landing
 - [x] Signed in
-- [ ] Form for new sign in
+- [x] Form for new sign in
 - [ ] List of trackers
 - [ ] Positions of tracker (with 'ping' button)
 
 ### Requirements
-Runs on Python 3
+Runs on Python 3  
 Install the following with `pip3`:
 ```
 pymysql
@@ -20,7 +20,7 @@ runenv
 Fill in `.env_sample`, rename it to `.env`
 
 ### Database
-Recreate the `mysql` db with `build.sql` locally. Port is default 3306 so no need to specify it in command
+Recreate the `mysql` db with `build.sql` locally. Port is default 3306 so no need to specify it in command  
 Run:
 ```
 mysql -u [yourusername] -p[yourpassword] <data/build.sql

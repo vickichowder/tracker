@@ -14,4 +14,4 @@ class Position(db.Model):
         self.longitude = longitude
 
     def __repr__(self):
-        return '<Position %r on %r @ lat:%r long:%r>' % self.tracker_id, self.time, self.latitude, self.longitude
+        return '<Position {} on {}, lat:{} long:{}>'.format(self.tracker_id, self.time, self.latitude, self.longitude)
