@@ -4,9 +4,9 @@ To do:
 - [x] Landing
 - [x] Signed in
 - [x] Form for new sign in
-- [ ] List of trackers
-- [ ] Positions of tracker (with 'ping' button)
-- [ ] Session var init function
+- [x] List of trackers
+- [x] Positions of tracker (with 'ping' button)
+- [ ] Credits remaining
 
 ### Requirements
 Runs on Python 3  
