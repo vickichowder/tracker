@@ -119,13 +119,17 @@
             </div>
           </div>
 
-          {% if logout is defined %}
-          <div class="logout">
-            <center>Goodbye, see you again soon</center>
-          {% else %}
           <div class="inner">
-            <p><h3>Finish setting up your tracker! Here's what we have so far:</h3></p>
+
+            <!-- Get error message from python side, put it into dismissable alert -->
+            {% if error_msg is defined %}
+            <div class="alert alert-warning" role="alert">
+              <strong>Oops!</strong> {{ error_msg }}
+            </div>
+            {% endif %}
+
             <!-- The form with pre-existing tracker information -->
+            <p><h3>Finish setting up your tracker! Here's what we have so far:</h3></p>
             <form method="post" class="form-horizontal" id="trackerForm">
             <div class="tab-content">
             </br>
@@ -174,8 +178,7 @@
                     </div>
                 </div>
             </div>
-            <button type="submit" value=" Send" class="btn btn-success" id="submit" />Submit</button>
-          {% endif %}
+            <button type="submit" value="submit" class="btn btn-success" id="submit">Submit</button>
         </div>
 
           <div class="mastfoot">
@@ -192,43 +195,34 @@
   </body>
 </html>
 <script>
-  window.onload = function() {
-    // year drop down list
-    var start = 1950;
-    var d = new Date();
-    var end = d.getFullYear() + 1;
-    var options = "";
-    for (var year = start ; year <= end ; year++) {
-      options += "<option value="+year+">"+year+"</option>";
-    }
-    document.getElementById("year").innerHTML = options;
-
-    // color drop down list
-    var colors = ["Color", "Black", "Blue", "Gray", "Black", "Silver", "White", "Red", "Yellow", "Other"];
-    var options = "";
-    colors.forEach(function(color) {
-      options += "<option value="+color+">"+color+"</option>";
-    });
-    document.getElementById("colors").innerHTML = options;
+  // year drop down list
+  var start = 1950;
+  var d = new Date();
+  var end = d.getFullYear() + 1;
+  var options = "";
+  for (var year = start ; year <= end ; year++) {
+    options += "<option value="+year+">"+year+"</option>";
   }
+  document.getElementById("year").innerHTML = options;
 
-  document.getElementById("submit").onclick = function(e) {
-    var data = $('trackerForm').serialize();
-    $.ajax({
-      url: '/new_tracker',
-      type: 'POST',
-      data: data,
-      success: function(response){
-        $.ajax({
-          url: '/new_tracker',
-          type: 'POST',
-          data: {'submit' : 'success'},
-          success: function(response){
-            // Send them to the new tracker confirmation form
-            window.location.href = '/new_tracker';
-          }
-        });
-      }
-    });
+  // color drop down list
+  var colors = ["Color", "Black", "Blue", "Gray", "Black", "Silver", "White", "Red", "Yellow", "Other"];
+  var options = "";
+  colors.forEach(function(color) {
+    options += "<option value="+color+">"+color+"</option>";
+  });
+  document.getElementById("colors").innerHTML = options;
+
+  window.onload = function() {
+    document.getElementById("submit").onclick = function(e) {
+      $.ajax({
+        url: '/new_tracker',
+        type: 'POST',
+        data: $('#trackerForm').serialize(),
+        success: function(response){
+          window.location.href = '/new_tracker';
+        }
+      });
+    }
   }
 </script>

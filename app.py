@@ -6,12 +6,11 @@ import logging, traceback
 from flask import Flask, request, session, redirect, render_template, url_for, json
 from twilio import twiml
 from runenv import load_env
-from flask_restful import Resource, Api
 from flask_sqlalchemy import SQLAlchemy
 
 # Include our own models
 from data.check import in_person, link, in_person_first_time, get_new_tracker, get_trackers, get_user_id
-from data.tracker import tracker_info
+from data.tracker import get_info, init
 from model.db import db
 from data.pings import Pings
 from connect.database import uri
@@ -37,9 +36,9 @@ twilio_client = Twilio().client
 
 @app.route('/', methods=['GET', 'POST'])
 def landing():
-    if request.method == 'POST':
+    if request.method == 'POST' or session['user']:
         # Init all session vars
-        return home()
+        return redirect(url_for('home'))
     else:
         # Not logged in
         return render_template('landing.html')
@@ -65,20 +64,22 @@ def home():
 
     # List of dicts with tracker info:
     # [{tracker_id, tracker_name, imei, type_, make, model, year, color}]
+    # Separate the list of tracker ids and the tracker's info
+    # So we don't pass the tracker id into front end
     session['new_trackers'] = get_new_tracker(session['user_id'])
-    session['new_tracker_info'] = tracker_info(session['new_trackers'])
-    if len(session['new_trackers']) > 0:
+    session['new_tracker_info'] = get_info(session['new_trackers'])
+    if len(session['new_tracker_info']) > 0:
         # There are uninitialized trackers
-        return new_tracker()
+        return redirect(url_for('new_tracker'))
     else:
         # Go to the page of trackers
-        return trackers()
+        return redirect(url_for('trackers'))
 
 @app.route('/trackers', methods=['POST', 'GET'])
 def trackers():
     # Get the list of trackers
-    session['trackers'] = get_trackers(session['user_id'])
-    return render_template("trackers.html", pings=session['trackers'])
+    session['tracker_names'] = get_trackers(session['user_id'])
+    return render_template("trackers.html", pings=session['tracker_names'])
 
 @app.route('/new', methods=['POST', 'GET'])
 def new():
@@ -96,28 +97,40 @@ def new():
     # Get any new trackers they need to init
     if len(session['new_trackers']) > 0:
         # They have an unintialized tracker they need to verify
-        return new_tracker(session['new_trackers'])
+        return redirect(url_for('new_tracker'))
     else:
         # No trackers for them to initialize
-        return home()
+        return redirect(url_for('home'))
 
 @app.route('/new_tracker', methods=['POST', 'GET'])
 def new_tracker():
-    print('New Trackers:', session['new_tracker_info'])
-    # For simplicity, render one form/one tracker's info at a time
     # After a submit, check if there are any more new trackers to initialize
     if request.method == 'POST':
-        if (len(session['new_trackers']) > 1) and (request.form['submit'] == 'success'):
-            session['new_trackers'] = session['new_trackers'][1:]
-            session['new_tracker_info'] = session['new_tracker_info'][1:]
+        print('Got an ajax post')
+        if (len(session['new_tracker_info']) > 0):
+            # Get the tracker info from form and commit to db
+            inputs = request.form
+            if len(inputs) > 0:
+                added = init(inputs, session['new_trackers'][0])
+                print('added:', added, inputs)
+                if not added:
+                    print('not added')
+                    # Commit not successful, refresh, put up an error message
+                    return render_template("info.html", tracker=session['new_tracker_info'][0], error_msg="Sorry, something went wrong, please try again")
+                else:
+                    # Commit successful
+                    # Remove the first tracker's info - the one just committed
+                    print('added')
+                    session['new_trackers'] = session['new_trackers'][1:]
+                    session['new_tracker_info'] = session['new_tracker_info'][1:]
 
-    if len(session['new_trackers']) > 0:
-        print('Uninitialized tracker!')
-        print(session['new_tracker_info'][0])
+    # For simplicity, render one form/one tracker's info at a time
+    if len(session['new_tracker_info']) > 0:
+        # There are still uninitialized trackers
         return render_template("info.html", tracker=session['new_tracker_info'][0])
     else:
-        print('No new trackers')
-        return trackers()
+        # No new trackers, go to the main trackers page
+        return redirect(url_for('trackers'))
 
 @app.route('/ping', methods=['POST', 'GET'])
 def ping_it():
@@ -143,6 +156,7 @@ def ping_it():
     """.format(call.sid, call.to, call.status, call.sid)
     return(stringy)
 
+# This will just be a button on the tracker's page
 @app.route('/status/<string:call_sid>', methods=['POST', 'GET'])
 def status_refresh(call_sid):
     # Get call info
@@ -182,7 +196,6 @@ def server_error(e):
         See logs for full stacktrace.
     """.format(e), 500
 
-
 if __name__ == '__main__':
-    # localhost:8000
+    # Point browser to localhost:8000
     app.run(port=8000, debug=True)

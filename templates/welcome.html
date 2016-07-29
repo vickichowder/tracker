@@ -51,18 +51,13 @@
       if (response.status === 'connected') {
         FB.api('/me', {fields: 'name, email'}, function(response) {
           console.log('Welcome page to get number for: ' + response.name);
-          email = response.email;
-          name = response.name;
 
           document.getElementById('logout').innerHTML = `<li><a onclick="logout();">Logout</a></li>`;
+          document.getElementById('nav').innerHTML = `<li><a href="/trackers">Trackers</a></li>
+          <li><a href="#">Credits</a></li>`;
 
           document.getElementById('new_user_form').innerHTML = `<h1 class="cover-heading">Hey there, `+response.name+`</h1>
-            <p class="lead">You've never signed in before - can I get your number so we can get you set up?</p>
-            <input type="text" placeholder="Primary Phone Number" id="phone" name="phone" class="no-border"/>`;
-
-          document.getElementById('nav').innerHTML = `<li><a href="/trackers">Trackers</a></li>
-            <li><a href="#">Credits</a></li>`;
-
+            <p class="lead">You've never signed in before - can I get your number so we can get you set up?</p>`;
         });
 
       } else {
@@ -99,18 +94,14 @@
       FB.getLoginStatus(function(response) {
         statusChangeCallback(response);
       });
-
     };
-
   </script>
   </head>
 
   <body>
 
     <div class="site-wrapper">
-
       <div class="site-wrapper-inner">
-
         <div class="cover-container">
 
           <div class="masthead clearfix">
@@ -125,7 +116,17 @@
             </div>
           </div>
 
+          {% if try_again is defined %}
+          <div class="alert alert-danger" role="alert">
+            <strong>Oops!</strong> We couldn't find your phone number, can you try again?<br>
+            Enter your number in the format <i>4161234321</i>
+          </div>
+          {% endif %}
+
           <div id="new_user_form" align="center"></div>
+          <div align='center'>
+            <input type="text" placeholder="Primary Phone Number" id="phone" name="phone" class="no-border"/>
+          </div>
 
           <div class="mastfoot">
             <div class="inner">
@@ -134,15 +135,13 @@
           </div>
 
         </div>
-
       </div>
-
     </div>
 
   </body>
 </html>
 <script>
-  $( document ).ready(function() {
+  window.onload = function() {
     document.getElementById('phone').onkeydown = function(e) {
       if(e.keyCode == 13){
         phone = document.getElementById('phone').value;
@@ -150,7 +149,6 @@
           $.ajax({
             url: '/new',
             type: 'POST',
-            // Get their fb email, name, and then phone number they just inputted
             data: {'phone' : phone},
             success: function(response){
               console.log(phone);
@@ -161,10 +159,9 @@
         } else {
           // Make sure they enter a 10 digit phone number
           alert("Your phone number should be 10 digits!")
-          number.focus();
           return false;
         }
       }
     }
-  });
+  }
 </script>

@@ -1,0 +1,21 @@
+.nav-tabs{
+  background-color:none;
+}
+.tab-content{
+    color:#fff;
+    padding:5px
+}
+.nav-tabs > li > a{
+  background-color: none;
+  /*border: medium none;*/
+}
+.nav-tabs > li > a:hover{
+  background-color: #666666 !important;
+    /*border: medium none;*/
+    color:#fff;
+}
+.nav-tabs > li > a:active{
+  background-color: #666666 !important;
+    /*border: medium none;*/
+    color:#fff;
+}
