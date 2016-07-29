@@ -48,7 +48,7 @@ def home():
         session['media'] = request.form['media']
         session['user'] = True
 
-    if in_person_first_time(session['email'], session['media']):
+    if du.in_person_first_time(session['email'], session['media']):
         # First time this person has logged in, we need to get their email
         return render_template("welcome.html")
 
@@ -73,7 +73,7 @@ def home():
 @app.route('/trackers', methods=['POST', 'GET'])
 def trackers():
     # Get list of trackers for this user_id
-    session['tracker_name_id'] = dt.get_trackers(session['user_id'])
+    session['tracker_name_id'] = dt.get_trackers_name_id(session['user_id'])
 
     admin = du.get_role(session['user_id'])
 
@@ -168,17 +168,25 @@ def ping(tracker_name):
 @app.route('/register', methods=['POST', 'GET'])
 def register():
     if request.method == 'POST':
+        print('Got ajax post')
         # Grap user info from new register page
         user = request.form
-        added = du.init(user)
+        print(user)
+        if (len(user['name']) > 0):
+            print(user['name'])
+            # Tracker id is empty here
+            added = du.init(user, '')
 
-        # Print different messages on page depending on outcome
-        if added:
-            return render_template('register.html', added='success', user=user['name'])
-        else:
-            return render_template('register.html', added='fail')
+            # Print different messages on page depending on outcome
+            if added:
+                print('added')
+                return render_template('register.html', added='success', user=user['name'])
+            else:
+                print('not added')
+                return render_template('register.html', added='fail')
 
     return render_template('register.html')
+
 
 @app.route('/logout')
 def logout():

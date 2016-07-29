@@ -5,6 +5,7 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, date, timedelta
 
 from connect.phone import Twilio
+from data.check import listify_column
 from model.db import db
 from model.position import Position
 from model.tracker import Tracker
@@ -54,14 +55,16 @@ def init(info, tracker_id):
         print(e)
         return False
 
-def get_trackers(user_id):
+def get_trackers_name_id(user_id):
     # Query the trackers that belong to this user_id
+    print('getting trackers')
     tracker_list = Tracker.query.with_entities(Tracker.tracker_id, Tracker.tracker_name).filter(Tracker.user_id==user_id)
     trackers = {}
 
     for row in tracker_list:
         trackers[row.tracker_name] = row.tracker_id
 
+    print(trackers)
     return trackers
 
 def get_locations(tracker_id):

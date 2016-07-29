@@ -85,9 +85,18 @@ def get_user_id(email, media):
 
 def get_role(user_id):
     # Return true if user is admin
-    return (User.query.with_entities(User.role).filter(User.user_id==user_id).first[0]) == 'Admin'
+    return (User.query.with_entities(User.role).filter(User.user_id==user_id).first()[0]) == 'Admin'
 
 def get_credits(user_id):
     # Remaining credits
-    # = balance (in cents) - 180 (6 buffer texts) / 30
-    return (User.query.with_entities(User.balance).filter(User.user_id==user_id).first()[0]
+    return User.query.with_entities(User.balance).filter(User.user_id==user_id).first()[0]
+
+def use_credit(user_id):
+    # Use up a credit
+    try:
+        user = User.query.filter(User.user_id==user_id)
+        user.balance -= 1
+        db.session.commit()
+    except Exception as e:
+        print(e)
+        pass
