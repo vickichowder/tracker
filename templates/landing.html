@@ -57,25 +57,14 @@
       if (response.status === 'connected') {
         // Logged into your app and Facebook.
         FB.api('/me', {fields: 'name, email'}, function(response) {
-          console.log('Landing page: Successful login for: ' + response.name);
-
-          document.getElementById('logout').innerHTML = `<li><a onclick="logout();">Logout</a></li>`;
-
-          document.getElementById('message').innerHTML = `<h1 class="cover-heading">Welcome, `+response.name+`</h1>
-          <p class="lead">Would you like to...</p>
-          <a href="/trackers" class="btn btn-lg btn-default">Ping a tracker</a>`;
-
-          document.getElementById('nav').innerHTML = `<li><a href="/trackers">Trackers</a></li>
-          <li><a href="#">Credits</a></li>`;
+          $.ajax({
+            url: '/home',
+            type: 'POST',
+            data: {'email' : response.email, 'name' : response.name, 'media': 'fb'}
+          });
+          window.location.href = '/home';
         });
       } else {
-        document.getElementById('message').innerHTML = `<h1 class="cover-heading">Track anything.</h1>
-        <p class="lead">No monthly subscriptions. Pay as you ping.</p>
-        <a class="btn btn-block btn-social btn-facebook" onlogin="checkLoginState();" onclick="login();">
-        <span class="fa fa-facebook"></span> <b>Continue with Facebook</b></a>`;
-
-        document.getElementById('nav').innerHTML = `<li><a href="#">Features</a></li>
-        <li><a href="#">Contact</a></li>`;
       }
     }
 
@@ -85,11 +74,11 @@
       });
     }
 
-    // Force redirect/refresh after login, regardless of successful or not
+    // Redirect after login
     function login() {
       FB.login(function(response) {
         FB.api('/me', {fields: 'name, email'}, function(response) {
-          console.log('Logging in: ' + response.name);
+          console.log('Logging in: ' + response.name + ' ' + response.email);
           $.ajax({
             url: '/home',
             type: 'POST',
@@ -142,8 +131,8 @@
               <h3 class="masthead-brand">oneTrack</h3>
               <nav>
                 <ul class="nav masthead-nav">
-                  <li><div id="nav" class="nav masthead-nav"></div></li>
-                  <li><div id="logout" class="nav masthead-nav"></div></li>
+                  <li><a href="#">Features</a></li>
+                  <li><a href="#">Contact</a></li>
                 </ul>
               </nav>
             </div>
@@ -156,7 +145,10 @@
           {% endif %}
 
           <div class="inner cover">
-            <div id="message"></div>
+            <h1 class="cover-heading">Track anything.</h1>
+            <p class="lead">No monthly subscriptions. Pay as you ping.</p>
+            <a class="btn btn-block btn-social btn-facebook" onlogin="checkLoginState();" onclick="login();">
+            <span class="fa fa-facebook"></span> <b>Continue with Facebook</b></a>
           </div>
 
 
