@@ -36,7 +36,7 @@ db.init_app(app)
 
 @app.route('/', methods=['GET', 'POST'])
 def landing():
-    if request.method == 'POST' or session['user']:
+    if request.method == 'POST' or session.get('user') is not None:
         # Init all session vars
         return redirect(url_for('home'))
     else:
@@ -167,7 +167,7 @@ def logout():
     session.pop('pings', None)
     session.pop('twilio_client', None)
     # Go home
-    return redirect(url_for('/'))
+    return redirect('/')
 
 @app.errorhandler(500)
 def server_error(e):
