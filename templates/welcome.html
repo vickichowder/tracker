@@ -52,10 +52,6 @@
         FB.api('/me', {fields: 'name, email'}, function(response) {
           console.log('Welcome page to get number for: ' + response.name);
 
-          document.getElementById('logout').innerHTML = `<li><a onclick="logout();">Logout</a></li>`;
-          document.getElementById('nav').innerHTML = `<li><a href="/trackers">Trackers</a></li>
-          <li><a href="#">Credits</a></li>`;
-
           document.getElementById('new_user_form').innerHTML = `<h1 class="cover-heading">Hey there, `+response.name+`</h1>
             <p class="lead">You've never signed in before - can I get your number so we can get you set up?</p>`;
         });
@@ -109,9 +105,10 @@
               <h3 class="masthead-brand">oneTrack</h3>
               <nav>
                 <ul class="nav masthead-nav">
-                  <li><div id='nav' class="nav masthead-nav"></div></li>
-                  <li><div id="logout" class="nav masthead-nav"></div></li>
-                </ul
+                  <li><a href="/trackers">Trackers</a></li>
+                  <li><a href="#">Credits</a></li>
+                  <li><a href="/logout" onclick="logout();checkLoginState();">Logout</a></li>
+                </ul>
               </nav>
             </div>
           </div>

@@ -60,11 +60,6 @@
         // Logged into your app and Facebook.
         FB.api('/me', {fields: 'name, email'}, function(response) {
           console.log('Successful login for: ' + response.name);
-
-          document.getElementById('nav').innerHTML = `<li><a href="/trackers">Trackers</a></li>
-          <li><a href="#">Credits</a></li>`;
-
-          document.getElementById('logout').innerHTML = `<li><a href="/logout" onclick="FB.logout();checkLoginState();">Logout</a></li>`;
         });
       } else {
         location.replace('/');
@@ -132,8 +127,9 @@
               <h3 class="masthead-brand">oneTrack</h3>
               <nav>
                 <ul class="nav masthead-nav">
-                  <li><div id='nav' class="nav masthead-nav"></div></li>
-                  <li><div id="logout" class="nav masthead-nav"></div></li>
+                  <li><a href="/trackers">Trackers</a></li>
+                  <li><a href="#">Credits</a></li>
+                  <li><a href="/logout" onclick="logout();checkLoginState();">Logout</a></li>
                 </ul>
               </nav>
             </div>

@@ -50,9 +50,7 @@
       if (response.status === 'connected') {
         // Logged into your app and Facebook.
         FB.api('/me', {fields: 'name, email'}, function(response) {
-          document.getElementById('nav').innerHTML = `<li><a href="/trackers">Trackers</a></li>
-          <li><a href="#">Credits</a></li>`;
-          document.getElementById('logout').innerHTML = `<li><a onclick="logout();">Logout</a></li>`;
+
         });
       } else {
         logout();
@@ -112,8 +110,9 @@
               <h3 class="masthead-brand">oneTrack</h3>
               <nav>
                 <ul class="nav masthead-nav">
-                  <li><div id="nav" class="nav masthead-nav"></div></li>
-                  <li><div id="logout" class="nav masthead-nav"></div></li>
+                  <li><a href="/trackers">Trackers</a></li>
+                  <li><a href="#">Credits</a></li>
+                  <li><a href="/logout" onclick="logout();checkLoginState();">Logout</a></li>
                 </ul>
               </nav>
             </div>
