@@ -128,3 +128,15 @@ def sync(tracker_id):
                     db.session.rollback()
                     continue
     print('Sync\'d:', tracker_id)
+
+def get_new_tracker(user_id):
+    # Get all tracker ids that haven't been initialized yet
+    trackers = Tracker.query.with_entities(Tracker.tracker_id).filter(Tracker.added == 0).filter(Tracker.user_id == user_id)
+
+    return listify_column(trackers)
+
+def get_trackers(user_id):
+    # Get all trackers for this user id
+    trackers = Tracker.query.with_entities(Tracker.tracker_id).filter(Tracker.user_id == User.user_id)
+
+    return listify_column(trackers)
