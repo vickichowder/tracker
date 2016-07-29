@@ -138,51 +138,22 @@ def new_tracker():
 def tracker_name(tracker_name):
     # Read locations from db
     locations = get_locations(get_tracker_id(session['user_id'], tracker_name))
-    print(locations)
-    
+
     return render_template("location.html", locations=locations, tracker_name=tracker_name)
 
-@app.route('/ping', methods=['POST', 'GET'])
-def ping_it():
-    # Make a call to the tracker
-    # The tracker will acknoledge the call and then hang up
-    call = twilio_client.calls.create(
-        to=TRACKER_1,
+@app.route('/ping/<string:tracker_name>', methods=['POST', 'GET'])
+def ping(tracker_name):
+    try:
+        # Make a call to the tracker
+        # The tracker will acknoledge the call and then hang up
+        call = twilio_client.calls.create(
+        to=get_tracker_id(session['user_id'], tracker_name),
         from_=TWILIO_NUMBER,
         url="http://twimlets.com/holdmusic?Bucket=com.twilio.music.ambient")
+    except Exception as e:
+        print(e)
 
-    # Call details
-    stringy = """
-        <h1>Call successful</h1>
-        Call id: {}<br>
-        Called: {}<br>
-        Status: {}<br><br>
-        <form action="/status/{}">
-            <input type="submit" value="Refresh Call Status">
-        </form>
-        <form action="/sms">
-            <input type="submit" value="Check sms">
-        </form>
-    """.format(call.sid, call.to, call.status, call.sid)
-    return(stringy)
-
-# This will just be a button on the tracker's page
-@app.route('/status/<string:call_sid>', methods=['POST', 'GET'])
-def status_refresh(call_sid):
-    # Get call info
-    call = twilio_client.calls.get(call_sid)
-
-    # Call details
-    stringy = """
-        <h1>Call successful</h1>
-        Call id: {}<br>
-        Called: {}<br>
-        Status: {}<br><br>
-        <form action="/status/{}">
-            <input type="submit" value="Refresh Call Status">
-        </form>
-    """.format(call.sid, call.to, call.status, call.sid)
-    return(stringy)
+    return redirect('/tracker/'+tracker_name)
 
 @app.route('/logout')
 def logout():

@@ -117,6 +117,10 @@
       fjs.parentNode.insertBefore(js, fjs);
     }(document, 'script', 'facebook-jssdk'));
 
+    // Button changes from ping to pinging
+    function buttonPress() {
+      document.getElementById("ping").innerHTML = "Pinging";
+    }
     </script>
   </head>
 
@@ -124,7 +128,7 @@
     <script>
       // Google maps
       function setMarker(map, latitude, longitude, time){
-        var contentString = "<div id='bodyContent'><b>Date:</b>" + time + "</div>"    ;
+        var contentString = "<div id='bodyContent'><b>Date:</b>" + time + "</div>";
         var infowindow = new google.maps.InfoWindow({
           content: contentString
         });
@@ -170,7 +174,12 @@
 
           <div class="inner">
             <h1 class="cover-heading">{{ tracker_name }}</h1></br>
-            <center><div id="map"></div></center>
+            <center>
+              <div id="map"></div></br>
+              <form action="/ping/{{ tracker_name }}" method="post">
+                <button type="submit" id="ping" class="btn btn-info btn-lg" onclick="buttonPress();">Ping It</button>
+              </form>
+            </center>
           </div>
 
           <div class="mastfoot">
