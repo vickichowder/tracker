@@ -28,31 +28,52 @@ def in_person(phone, email, media):
 
     return (phone_exist and not email_exist)
 
-def link(phone, user_id, email, media):
-    print('link function:')
-    user = User.query.filter(User.phone == phone).first()
-    print(user)
-    # Add their email to the respective login type
-    if media == 'fb':
-        user.fb_email = email
-    elif media == 'google':
-        user.google_email = email
-    print(user)
-    db.session.commit()
+def link(phone, email, media, name):
+    try:
+        print('link function:')
+        user = User.query.filter(User.phone == phone).first()
+        # Add their email to the respective login type
+        if media == 'fb':
+            user.fb_email = email
+        elif media == 'google':
+            user.google_email = email
+        print(user)
 
-    tracker_info = []
-    tracker_info = Tracker.query.with_entities(Tracker.tracker_id).filter(Tracker.user_id == user.user_id)
-    print(tracker_info)
-    for row in tracker_info:
-        tracker = dict(row.__dict__)
-        print(tracker)
-        tracker.pop('_sa_instance_state')
-        tracker_info.append(tracker)
+        if user.name is None:
+            user.name = name
+        # Commit changes
+        db.session.commit()
 
-    return tracker_info
+        return True
+    except Exception as e:
+        # Return false on failure
+        print(e)
+        return False
 
 def get_user_id(email, media):
+    # Get user id based on the type of email used to sign in
     if media == 'fb':
         return User.query.filter(User.fb_email == email).first().user_id
     elif media == 'google':
         return User.query.filter(User.google_email == email).first().user_id
+
+def get_new_tracker(user_id):
+    # Get all tracker ids that haven't been initialized yet
+    trackers = Tracker.query.with_entities(Tracker.tracker_id).filter(Tracker.added == 0).filter(Tracker.user_id == user_id)
+
+    return listify_column(trackers)
+
+def get_trackers(user_id):
+    # Get all trackers for this user id
+    trackers = Tracker.query.with_entities(Tracker.tracker_id).filter(Tracker.user_id == User.user_id)
+
+    return listify_column(trackers)
+
+def listify_column(result):
+    # Turn the results of a sqlalchemy cursor of one column into list
+    result_list = []
+
+    for row in result:
+        result_list.append(row[0])
+
+    return result_list
