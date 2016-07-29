@@ -9,8 +9,9 @@ from runenv import load_env
 from flask_sqlalchemy import SQLAlchemy
 
 # Include our own models
-from data.check import in_person, link, in_person_first_time, get_new_tracker, get_trackers, get_user_id, get_credits
-from data.tracker import get_info, init, get_trackers, get_locations, sync, get_tracker_id
+import data.check as dc
+import data.tracker as dt
+import data.user as du
 from model.db import db
 from connect.database import uri
 
@@ -52,15 +53,15 @@ def home():
         return render_template("welcome.html")
 
     # Save user id into this session
-    session['user_id'] = get_user_id(session['email'], session['media'])
+    session['user_id'] = du.get_user_id(session['email'], session['media'])
     print('user id:', session['user_id'])
 
     # List of dicts with tracker info:
     # [{tracker_id, tracker_name, imei, type_, make, model, year, color}]
     # Separate the list of tracker ids and the tracker's info
     # So we don't pass the tracker id into front end
-    session['new_trackers'] = get_new_tracker(session['user_id'])
-    session['new_tracker_info'] = get_info(session['new_trackers'])
+    session['new_trackers'] = dt.get_new_tracker(session['user_id'])
+    session['new_tracker_info'] = dt.get_info(session['new_trackers'])
 
     if len(session['new_tracker_info']) > 0:
         # There are uninitialized trackers
@@ -72,13 +73,18 @@ def home():
 @app.route('/trackers', methods=['POST', 'GET'])
 def trackers():
     # Get list of trackers for this user_id
-    session['tracker_name_id'] = get_trackers(session['user_id'])
+    session['tracker_name_id'] = dt.get_trackers(session['user_id'])
 
-    return render_template("trackers.html", tracker_names=list(session['tracker_name_id'].keys()))
+    admin = du.get_role(session['user_id'])
+
+    if admin:
+        return render_template("trackers.html", tracker_names=list(session['tracker_name_id'].keys()), admin=True)
+    else:
+        return render_template("trackers.html", tracker_names=list(session['tracker_name_id'].keys()))
 
 @app.route('/credits', methods=['POST', 'GET'])
 def credits():
-    remaining = get_credits(session['user_id'])
+    remaining = du.get_credits(session['user_id'])
 
     return render_template("credits.html", credits_remaining=remaining)
 
@@ -89,8 +95,8 @@ def new():
         session['phone'] = request.form['phone']
 
         # Link their fb email to their phone number
-        linked = link(session['phone'], session['email'], session['media'], session['name'])
-        session['user_id'] = get_user_id(session['email'], session['media'])
+        linked = du.link(session['phone'], session['email'], session['media'], session['name'])
+        session['user_id'] = du.get_user_id(session['email'], session['media'])
         print('user id:', session['user_id'])
 
         if not linked:
@@ -114,7 +120,7 @@ def new_tracker():
             # Get the tracker info from form and commit to db
             inputs = request.form
             if len(inputs) > 0:
-                added = init(inputs, session['new_trackers'][0])
+                added = dt.init(inputs, session['new_trackers'][0])
                 print('added:', added, inputs)
                 if not added:
                     print('not added')
@@ -138,9 +144,9 @@ def new_tracker():
 @app.route('/tracker/<string:tracker_name>', methods=['POST', 'GET'])
 def tracker_name(tracker_name):
     # Get their remaining credits
-    credits = get_credits(session['user_id'])
+    credits = du.get_credits(session['user_id'])
     # Read locations from db
-    locations = get_locations(get_tracker_id(session['user_id'], tracker_name))
+    locations = dt.get_locations(dt.get_tracker_id(session['user_id'], tracker_name))
 
     return render_template("location.html", locations=locations, tracker_name=tracker_name, credits=credits)
 
@@ -150,13 +156,29 @@ def ping(tracker_name):
         # Make a call to the tracker
         # The tracker will acknoledge the call and then hang up
         call = twilio_client.calls.create(
-        to=get_tracker_id(session['user_id'], tracker_name),
-        from_=TWILIO_NUMBER,
-        url="http://twimlets.com/holdmusic?Bucket=com.twilio.music.ambient")
+            to=get_tracker_id(session['user_id'], tracker_name),
+            from_=TWILIO_NUMBER,
+            url="http://twimlets.com/holdmusic?Bucket=com.twilio.music.ambient")
+        du.use_credit(session['user_id'])
     except Exception as e:
         print(e)
 
     return redirect('/tracker/'+tracker_name)
+
+@app.route('/register', methods=['POST', 'GET'])
+def register():
+    if request.method == 'POST':
+        # Grap user info from new register page
+        user = request.form
+        added = du.init(user)
+
+        # Print different messages on page depending on outcome
+        if added:
+            return render_template('register.html', added='success', user=user['name'])
+        else:
+            return render_template('register.html', added='fail')
+
+    return render_template('register.html')
 
 @app.route('/logout')
 def logout():

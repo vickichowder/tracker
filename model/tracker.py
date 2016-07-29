@@ -13,8 +13,7 @@ class Tracker(db.Model):
     year = db.Column(db.Integer)
     color = db.Column(db.String(50))
 
-    def __init__(self, tracker_id, imei, user_id, added, tracker_name, type_, make, model, year, color):
-        self.tracker_id = tracker_id
+    def __init__(self, imei, user_id, added, tracker_name, type_, make, model, year, color):
         self.imei = imei
         self.user_id = user_id
         self.added = added

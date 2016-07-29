@@ -9,12 +9,9 @@ class User(db.Model):
     balance = db.Column(db.Integer, unique=True)
     role = db.Column(db.String(50))
 
-    def __init__(self, user_id, phone, email, fb_email, google_email, name, balance, role):
-        self.user_id = user_id
+    def __init__(self, phone, email, name, balance, role):
         self.phone = phone
         self.email = email
-        self.fb_email = fb_email
-        self.google_email = google_email
         self.name = name
         self.balance = balance
         self.role = role
