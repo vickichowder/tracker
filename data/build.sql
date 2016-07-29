@@ -31,7 +31,7 @@ create table user(
   email varchar(80) default null, -- contact email
   fb_email varchar(80) default null,
   google_email varchar(80) default null,
-  balance int default 0,
+  balance int default 0, -- in cents
   role varchar(50) not null default 'User',
   primary key (user_id)
 );

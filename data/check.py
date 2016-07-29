@@ -1,5 +1,7 @@
 import os, logging
 
+from math import floor
+
 from twilio import twiml
 from flask_sqlalchemy import SQLAlchemy
 
@@ -77,3 +79,8 @@ def listify_column(result):
         result_list.append(row[0])
 
     return result_list
+
+def get_credits(user_id):
+    # Remaining credits
+    # = balance (in cents) - 180 (6 buffer texts) / 30
+    return floor((User.query.with_entities(User.balance).filter(User.user_id==user_id).first()[0] - 180) / 30)

@@ -9,7 +9,7 @@ from runenv import load_env
 from flask_sqlalchemy import SQLAlchemy
 
 # Include our own models
-from data.check import in_person, link, in_person_first_time, get_new_tracker, get_trackers, get_user_id
+from data.check import in_person, link, in_person_first_time, get_new_tracker, get_trackers, get_user_id, get_credits
 from data.tracker import get_info, init, get_trackers, get_locations, sync, get_tracker_id
 from model.db import db
 from connect.database import uri
@@ -36,12 +36,7 @@ db.init_app(app)
 
 @app.route('/', methods=['GET', 'POST'])
 def landing():
-    if request.method == 'POST' or session.get('user') is not None:
-        # Init all session vars
-        return redirect(url_for('home'))
-    else:
-        # Not logged in
-        return render_template('landing.html')
+    return render_template('landing.html')
 
 @app.route('/home', methods=['GET', 'POST'])
 def home():
@@ -80,6 +75,12 @@ def trackers():
     session['tracker_name_id'] = get_trackers(session['user_id'])
 
     return render_template("trackers.html", tracker_names=list(session['tracker_name_id'].keys()))
+
+@app.route('/credits', methods=['POST', 'GET'])
+def credits():
+    remaining = get_credits(session['user_id'])
+
+    return render_template("credits.html", credits_remaining=remaining)
 
 @app.route('/new', methods=['POST', 'GET'])
 def new():
@@ -136,10 +137,12 @@ def new_tracker():
 
 @app.route('/tracker/<string:tracker_name>', methods=['POST', 'GET'])
 def tracker_name(tracker_name):
+    # Get their remaining credits
+    credits = get_credits(session['user_id'])
     # Read locations from db
     locations = get_locations(get_tracker_id(session['user_id'], tracker_name))
 
-    return render_template("location.html", locations=locations, tracker_name=tracker_name)
+    return render_template("location.html", locations=locations, tracker_name=tracker_name, credits=credits)
 
 @app.route('/ping/<string:tracker_name>', methods=['POST', 'GET'])
 def ping(tracker_name):

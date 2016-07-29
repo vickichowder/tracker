@@ -17,10 +17,10 @@
     <!-- Custom styles for this template -->
     <link href="/static/css/landing.css" rel="stylesheet" type="text/css"/>
     <link href="/static/css/fb.css" rel="stylesheet" type="text/css"/>
-    <link href="/static/css/location.css" rel="stylesheet" type="text/css"/>
+    <link href="/static/css/credits.css" rel="stylesheet" type="text/css"/>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
-
+    <script src="https://use.fontawesome.com/f82f4503f4.js"></script>
 
     <!-- Facebook -->
     <div id="fb-root"></div>
@@ -112,47 +112,15 @@
       fjs.parentNode.insertBefore(js, fjs);
     }(document, 'script', 'facebook-jssdk'));
 
-    // Button changes from ping to pinging
-    function buttonPress() {
-      document.getElementById("ping").innerHTML = "<strong><i>Pinging</i></strong>";
-    }
-    </script>
+  </script>
   </head>
 
   <body>
-    <script>
-      // Google maps
-      function setMarker(map, latitude, longitude, time){
-        var contentString = "<div id='bodyContent'><b>Date:</b>" + time + "</div>";
-        var infowindow = new google.maps.InfoWindow({
-          content: contentString
-        });
-
-        var marker = new google.maps.Marker({
-          position: {lat: latitude, lng: longitude},
-          map: map
-        });
-        marker.addListener('click', function() {
-          infowindow.open(map, marker);
-        });
-      }
-
-      function initMap() {
-        {% for location in locations %}
-        {% if loop.index == 1 %}
-        var map = new google.maps.Map(document.getElementById('map'), {
-          center: {lat: parseFloat({{ location.latitude }}), lng: parseFloat({{ location.longitude }})},
-          zoom: 10});
-        {% endif %}
-        // Add a marker with the location and time as the popup when clicked
-        setMarker(map, parseFloat({{ location.latitude }}), parseFloat({{ location.longitude }}), "{{ location.time }}");
-        {% endfor %}
-      }
-    </script>
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCNrsDjTwhGN3YXS5vvPbEYzjTojXzkPZ4&callback=initMap" type="text/javascript"></script>
 
     <div class="site-wrapper">
+
       <div class="site-wrapper-inner">
+
         <div class="cover-container">
 
           <div class="masthead clearfix">
@@ -169,18 +137,16 @@
           </div>
 
           <div class="inner">
-            <h1 class="cover-heading">{{ tracker_name }}</h1></br>
             <center>
-              <div id="map"></div></br>
-              {% if credits > 0 %}
-              <form action="/ping/{{ tracker_name }}" method="post">
-                <button type="submit" id="ping" class="btn btn-info btn-lg" onclick="buttonPress();"><strong>Ping It</strong></button>
-              </form>
-              {% else %}
-              <button type="submit" id="ping" class="btn btn-info btn-lg" disabled="disabled">You don't have enough credits!</button>
-              {% endif %}
-            </center>
+            <h1>Your Credits</h1>
+            <div class="panel panel-default credits">
+              <div class="panel-body"><h3>{{ credits_remaining }}</h3></div>
+              <div class="panel-footer">pings left</div>
+            </div>
+          </center>
           </div>
+          </div>
+
 
           <div class="mastfoot">
             <div class="inner">
@@ -189,7 +155,10 @@
           </div>
 
         </div>
+
       </div>
+
     </div>
+
   </body>
 </html>
