@@ -61,8 +61,9 @@ def home():
     # [{tracker_id, tracker_name, imei, type_, make, model, year, color}]
     # Separate the list of tracker ids and the tracker's info
     # So we don't pass the tracker id into front end
-    session['new_trackers'] = dt.get_new_tracker(session['user_id'])
-    session['new_tracker_info'] = dt.get_info(session['new_trackers'])
+    if session.get('user_id') is not None:
+        session['new_trackers'] = dt.get_new_tracker(session['user_id'])
+        session['new_tracker_info'] = dt.get_info(session['new_trackers'])
 
     if len(session['new_tracker_info']) > 0:
         # There are uninitialized trackers
