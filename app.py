@@ -48,9 +48,10 @@ def home():
         session['media'] = request.form['media']
         session['user'] = True
 
-    if du.in_person_first_time(session['email'], session['media']):
+    if session.get('email') is not None:
+        if du.in_person_first_time(session['email'], session['media']):
         # First time this person has logged in, we need to get their email
-        return render_template("welcome.html")
+            return render_template("welcome.html")
 
     # Save user id into this session
     session['user_id'] = du.get_user_id(session['email'], session['media'])
