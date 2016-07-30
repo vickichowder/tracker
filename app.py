@@ -53,9 +53,9 @@ def home():
         # First time this person has logged in, we need to get their email
             return render_template("welcome.html")
 
-    # Save user id into this session
-    session['user_id'] = du.get_user_id(session['email'], session['media'])
-    print('user id:', session['user_id'])
+        # Save user id into this session
+        session['user_id'] = du.get_user_id(session['email'], session['media'])
+        print('user id:', session['user_id'])
 
     # List of dicts with tracker info:
     # [{tracker_id, tracker_name, imei, type_, make, model, year, color}]
