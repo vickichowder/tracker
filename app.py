@@ -65,12 +65,14 @@ def home():
         session['new_trackers'] = dt.get_new_tracker(session['user_id'])
         session['new_tracker_info'] = dt.get_info(session['new_trackers'])
 
-    if len(session['new_tracker_info']) > 0:
+    if session.get('new_tracker_info') is not None and len(session.get('new_tracker_info')) > 0:
         # There are uninitialized trackers
         return redirect(url_for('new_tracker'))
-    else:
+    elif session.get('user') is not None:
         # Go to page of trackers
         return redirect(url_for('trackers'))
+    else:
+        return redirect('/')
 
 @app.route('/trackers', methods=['POST', 'GET'])
 def trackers():
@@ -193,14 +195,7 @@ def register():
 @app.route('/logout')
 def logout():
     # Get rid of the session vars
-    session.pop('user', None)
-    session.pop('email', None)
-    session.pop('user_id', None)
-    session.pop('name', None)
-    session.pop('media', None)
-    session.pop('phone', None)
-    session.pop('pings', None)
-    session.pop('twilio_client', None)
+    session.clear()
     # Go home
     return redirect('/')
 

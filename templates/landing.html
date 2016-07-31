@@ -54,17 +54,19 @@
       // app know the current login status of the person.
       // Full docs on the response object can be found in the documentation
       // for FB.getLoginStatus().
+      document.getElementById('id')
       if (response.status === 'connected') {
         // Logged into your app and Facebook.
-        FB.api('/me', {fields: 'name, email'}, function(response) {
-          $.ajax({
-            url: '/home',
-            type: 'POST',
-            data: {'email' : response.email, 'name' : response.name, 'media': 'fb'}
-          });
-          window.location.href = '/home';
-        });
+        // FB.api('/me', {fields: 'name, email'}, function(response) {
+        //   $.ajax({
+        //     url: '/home',
+        //     type: 'POST',
+        //     data: {'email' : response.email, 'name' : response.name, 'media': 'fb'}
+        //   });
+        //   window.location.href = '/home';
+        // });
       } else {
+        // Don't do anything
       }
     }
 
@@ -85,9 +87,9 @@
             data: {'email' : response.email, 'name' : response.name, 'media': 'fb'}
           });
           console.log('Signing in: ' + response.name);
-          window.location.href = '/home';
         });
       }, {scope: 'public_profile, email'});
+      window.location.href = '/home';
     }
 
     // Override the FB logout because it's been buggy the past few times during tests
@@ -145,7 +147,7 @@
           {% endif %}
 
           <div class="inner cover">
-            <h1 class="cover-heading">Track anything.</h1>
+            <h1 class="cover-heading">Track anything</h1>
             <p class="lead">No monthly subscriptions. Pay as you ping.</p>
             <a class="btn btn-block btn-social btn-facebook" onlogin="checkLoginState();" onclick="login();">
             <span class="fa fa-facebook"></span> <b>Continue with Facebook</b></a>
