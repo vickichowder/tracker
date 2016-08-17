@@ -4,6 +4,7 @@ class User(db.Model):
     # Mirrors the user table in db
     user_id = db.Column(db.Integer, unique=True, primary_key=True) # auto_increment integer
     phone = db.Column(db.String(10), unique=True)
+    email = db.Column(db.String(120), unique=True)
     fb_email = db.Column(db.String(120), unique=True)
     name = db.Column(db.String(120), unique=True)
     balance = db.Column(db.Integer, unique=True)

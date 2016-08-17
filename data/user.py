@@ -18,16 +18,18 @@ def init(info, tracker_id):
         # Default balance = 100
         user = User(info['phone'], info['email'], info['name'], 100, 'User')
         db.session.add(user)
-        db.session.commit()
+        print(user)
 
         if len(info['imei']) == 10:
             # Add a new tracker for the new user if imei exists
             # 'added' column = 0 --> user needs to login and review tracker info before it's finalized
             # Default type = 'Vehicle'
+            print('Add tracker for this user,', info['user'], 'imei:', info['imei'])
             tracker = Tracker(info['imei'], info['user_id'], 0, info['tracker_name'], 'Vehicle', info['make'], info['model'], info['year'], info['color'])
             db.session.add(tracker)
-            db.session.commit()
+            print('added tracker', info['tracker_name'])
 
+        db.session.commit()
         # True on success
         return True
     except Exception as e:
@@ -38,6 +40,7 @@ def in_person_first_time(email, media):
     # returns true if email not in db
     if media == 'fb':
         return not db.session.query(db.exists().where(User.fb_email == email)).scalar()
+    # Support for google login in the future
     elif media == 'google':
         return not db.session.query(db.exists().where(User.google_email == email)).scalar()
 

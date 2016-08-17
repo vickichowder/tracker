@@ -41,12 +41,17 @@ def landing():
 
 @app.route('/home', methods=['GET', 'POST'])
 def home():
-    if request.method == 'POST':
+    session.modified = True
+    try:
         # Init session vars
         session['email'] = request.form['email']
         session['name'] = request.form['name']
         session['media'] = request.form['media']
         session['user'] = True
+        print('Got session vars')
+    except:
+        print('Could not get session vars')
+        pass
 
     if session.get('email') is not None:
         if du.in_person_first_time(session['email'], session['media']):
@@ -54,8 +59,8 @@ def home():
             return render_template("welcome.html")
 
         # Save user id into this session
-        session['user_id'] = du.get_user_id(session['email'], session['media'])
-        print('user id:', session['user_id'])
+    session['user_id'] = du.get_user_id(session['email'], session['media'])
+    print('user id:', session['user_id'])
 
     # List of dicts with tracker info:
     # [{tracker_id, tracker_name, imei, type_, make, model, year, color}]
@@ -65,8 +70,9 @@ def home():
         session['new_trackers'] = dt.get_new_tracker(session['user_id'])
         session['new_tracker_info'] = dt.get_info(session['new_trackers'])
 
-    if len(session['new_tracker_info']) > 0:
+    if session.get('user_id') is not None and len(session['new_tracker_info']) > 0:
         # There are uninitialized trackers
+        print(session['new_trackers'])
         return redirect(url_for('new_tracker'))
     else:
         # Go to page of trackers
@@ -77,6 +83,7 @@ def trackers():
     # Get list of trackers for this user_id
     session['tracker_name_id'] = dt.get_trackers_name_id(session['user_id'])
 
+    # Check if user is admin
     admin = du.get_role(session['user_id'])
 
     if admin:
@@ -97,16 +104,22 @@ def new():
         session['phone'] = request.form['phone']
 
         # Link their fb email to their phone number
-        linked = du.link(session['phone'], session['email'], session['media'], session['name'])
-        session['user_id'] = du.get_user_id(session['email'], session['media'])
-        print('user id:', session['user_id'])
+        try:
+            linked = du.link(session['phone'], session['email'], session['media'], session['name'])
+            print(linked)
+            session['user_id'] = du.get_user_id(session['email'], session['media'])
+            print('user id:', session['user_id'])
 
-        if not linked:
+            if not linked:
+                print('Not linked')
+                return render_template("welcome.html", try_again='true')
+
+        except:
             # Take them back to enter their number again
             return render_template("welcome.html", try_again='true')
 
     # Get any new trackers they need to init
-    if len(session['new_trackers']) > 0:
+    if session.get('new_trackers') is not None and len(session['new_trackers']) > 0:
         # They have an unintialized tracker they need to verify
         return redirect(url_for('new_tracker'))
     else:
@@ -203,7 +216,7 @@ def logout():
     session.pop('twilio_client', None)
     # Go home
     return redirect('/')
-
+DB_PORT=3306
 @app.errorhandler(500)
 def server_error(e):
     # Goddamn errors
@@ -215,4 +228,4 @@ def server_error(e):
 
 if __name__ == '__main__':
     # Point browser to localhost:8000
-    app.run(port=8000, debug=True)
+    app.run(port=8000, debug=True, host='0.0.0.0')

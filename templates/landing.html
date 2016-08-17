@@ -56,14 +56,14 @@
       // for FB.getLoginStatus().
       if (response.status === 'connected') {
         // Logged into your app and Facebook.
-        FB.api('/me', {fields: 'name, email'}, function(response) {
-          $.ajax({
-            url: '/home',
-            type: 'POST',
-            data: {'email' : response.email, 'name' : response.name, 'media': 'fb'}
-          });
-          window.location.href = '/home';
-        });
+        // FB.api('/me', {fields: 'name, email'}, function(response) {
+        //   $.ajax({
+        //     url: '/home',
+        //     type: 'POST',
+        //     data: {'email' : response.email, 'name' : response.name, 'media': 'fb'}
+        //   });
+        //   window.location.href = '/home';
+        // });
       } else {
       }
     }

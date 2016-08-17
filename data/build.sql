@@ -39,3 +39,4 @@ create table user(
 insert into user (phone, name) values('4169392992', null);
 
 insert into tracker (tracker_id, user_id, tracker_name, imei) values ('+16478776809', 1, 'The first one', '123456789012345');
+insert into tracker (tracker_id, user_id, tracker_name, imei) values ('+16479710112', 2, 'Martin\'s', '123456789012344');
