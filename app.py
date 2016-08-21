@@ -91,7 +91,6 @@ def home():
     else:
         return render_template("welcome.html")
 
-
 @app.route('/trackers', methods=['POST', 'GET'])
 def trackers():
     # Get list of trackers for this user_id
@@ -220,14 +219,7 @@ def register():
 @app.route('/logout')
 def logout():
     # Get rid of the session vars
-    session.pop('user', None)
-    session.pop('email', None)
-    session.pop('user_id', None)
-    session.pop('name', None)
-    session.pop('media', None)
-    session.pop('phone', None)
-    session.pop('pings', None)
-    session.pop('twilio_client', None)
+    session.clear()
     # Go home
     return redirect('/')
 DB_PORT=3306
