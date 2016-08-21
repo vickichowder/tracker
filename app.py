@@ -1,7 +1,10 @@
+#!/usr/bin/python3
 import os
 import json
 # For debugging
 import logging, traceback
+# So we can see the output when webapp is running
+import subprocess, time
 
 from flask import Flask, request, session, redirect, render_template, url_for, jsonify
 from twilio import twiml
@@ -42,25 +45,33 @@ def landing():
 @app.route('/home', methods=['GET', 'POST'])
 def home():
     session.modified = True
-    try:
-        # Init session vars
-        session['email'] = request.form['email']
-        session['name'] = request.form['name']
-        session['media'] = request.form['media']
-        session['user'] = True
-        print('Got session vars')
-    except:
-        print('Could not get session vars')
-        pass
+    if session.get('email') is None:
+        try:
+            # Init session vars
+            session['email'] = request.form['email']
+            print(session['email'])
+            session['name'] = request.form['name']
+            print(session['name'])
+            session['media'] = request.form['media']
+            print(session['media'])
+            session['user'] = True
+            print(session['user'])
+            print('Got session vars')
+        except:
+            print('Could not get session vars')
+            pass
+    else:
+        print('Already have existing session vars', session.get('email'))
 
     if session.get('email') is not None:
         if du.in_person_first_time(session['email'], session['media']):
         # First time this person has logged in, we need to get their email
+            print('First time login')
             return render_template("welcome.html")
-
-        # Save user id into this session
-    session['user_id'] = du.get_user_id(session['email'], session['media'])
-    print('user id:', session['user_id'])
+        else:
+            # Save user id into this session
+            session['user_id'] = du.get_user_id(session['email'], session['media'])
+            print('user id:', session['user_id'])
 
     # List of dicts with tracker info:
     # [{tracker_id, tracker_name, imei, type_, make, model, year, color}]
@@ -74,9 +85,12 @@ def home():
         # There are uninitialized trackers
         print(session['new_trackers'])
         return redirect(url_for('new_tracker'))
-    else:
+    elif session.get('user_id') is not None:
         # Go to page of trackers
         return redirect(url_for('trackers'))
+    else:
+        return render_template("welcome.html")
+
 
 @app.route('/trackers', methods=['POST', 'GET'])
 def trackers():
