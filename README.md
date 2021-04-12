@@ -6,7 +6,7 @@ To do:
 - [x] Form for new sign in
 - [x] List of trackers
 - [x] Positions of tracker (with 'ping' button)
-- [ ] Credits remaining
+- [x] Credits remaining
 
 ### Requirements
 Runs on Python 3  
